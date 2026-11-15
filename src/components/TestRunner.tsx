@@ -20,12 +20,18 @@ import {
   type GradeQuizResult,
 } from '../utils/quizEngine';
 
+import {
+  isFullscreenActive,
+  requestAppFullscreen,
+} from '../utils/antiCheat';
+
 interface TestRunnerProps {
   unit: UnitData;
   darkMode: boolean;
   onToggleDarkMode: () => void;
   onFinishTest: (result: GradeQuizResult, elapsedSeconds: number) => Promise<void>;
   onCancelTest: () => void;
+  onTriggerCheaterLock: () => void;
 }
 
 const OPTION_LETTERS = ['A', 'B', 'C', 'D'] as const;
@@ -36,6 +42,7 @@ export function TestRunner({
   onToggleDarkMode,
   onFinishTest,
   onCancelTest,
+  onTriggerCheaterLock,
 }: TestRunnerProps) {
   // Shuffle questions & options once when the test mounts
   const shuffledQuestions: ShuffledQuestion[] = useMemo(
@@ -54,6 +61,8 @@ export function TestRunner({
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const submittedRef = useRef(false);
+  const exitingLegitRef = useRef(false);
+  const fullscreenEnteredRef = useRef(isFullscreenActive());
   const answersRef = useRef(answers);
   answersRef.current = answers;
   const secondsLeftRef = useRef(secondsLeft);
@@ -91,6 +100,34 @@ export function TestRunner({
       );
     }
   }, [shuffledQuestions, onFinishTest]);
+
+  // Enforce fullscreen anti-cheat lock: exiting fullscreen locks test immediately
+  useEffect(() => {
+    if (isFullscreenActive()) {
+      fullscreenEnteredRef.current = true;
+    }
+
+    function handleFullscreenChange() {
+      if (isFullscreenActive()) {
+        fullscreenEnteredRef.current = true;
+        return;
+      }
+      if (
+        fullscreenEnteredRef.current &&
+        !submittedRef.current &&
+        !exitingLegitRef.current
+      ) {
+        onTriggerCheaterLock();
+      }
+    }
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+    };
+  }, [onTriggerCheaterLock]);
 
   // 10-minute countdown timer
   useEffect(() => {
@@ -132,6 +169,9 @@ export function TestRunner({
 
   function selectOption(optionIdx: number) {
     if (!currentQuestion || submitting) return;
+    if (!fullscreenEnteredRef.current && !isFullscreenActive()) {
+      void requestAppFullscreen();
+    }
     setAnswers((prev) => ({
       ...prev,
       [currentQuestion.id]: optionIdx,
@@ -500,7 +540,10 @@ export function TestRunner({
               </button>
               <button
                 type="button"
-                onClick={onCancelTest}
+                onClick={() => {
+                  exitingLegitRef.current = true;
+                  onCancelTest();
+                }}
                 className="min-h-[42px] rounded-xl bg-red-600 px-4 text-sm font-semibold text-white hover:bg-red-700"
               >
                 Chiqish
