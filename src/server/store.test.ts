@@ -1,0 +1,138 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { AppStore } from './store';
+
+function createTempStore(): { store: AppStore; cleanup: () => void } {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vocab-store-'));
+  const file = path.join(dir, 'db.json');
+  const store = new AppStore(file);
+  return {
+    store,
+    cleanup: () => fs.rmSync(dir, { recursive: true, force: true }),
+  };
+}
+
+test('student registration locks account against other users without matching token', () => {
+  const { store, cleanup } = createTempStore();
+  try {
+    const first = store.enterStudent('Aziza Karimova', '8-03');
+    assert.equal(first.ok, true);
+    if (!first.ok) return;
+    assert.equal(first.status, 'created');
+    assert.equal(first.profile.fullName, 'Aziza Karimova');
+    assert.equal(first.profile.className, '8-03');
+
+    // Same session token resumes cleanly
+    const resumed = store.enterStudent('Aziza Karimova', '8-03', first.token);
+    assert.equal(resumed.ok, true);
+    if (resumed.ok) {
+      assert.equal(resumed.status, 'resumed');
+    }
+
+    // Another person without token is blocked
+    const intruder = store.enterStudent('aziza   karimova', '8-03');
+    assert.equal(intruder.ok, false);
+    if (!intruder.ok) {
+      assert.equal(intruder.code, 'ACCOUNT_LOCKED');
+    }
+
+    // Wrong token is also blocked
+    const wrongToken = store.enterStudent('Aziza Karimova', '8-03', 'fake-token');
+    assert.equal(wrongToken.ok, false);
+    if (!wrongToken.ok) {
+      assert.equal(wrongToken.code, 'ACCOUNT_LOCKED');
+    }
+  } finally {
+    cleanup();
+  }
+});
+
+test('student attempts persist in profile and calculate total points', () => {
+  const { store, cleanup } = createTempStore();
+  try {
+    const created = store.enterStudent('Jasur Aliyev', '9-02');
+    assert.equal(created.ok, true);
+    if (!created.ok) return;
+    assert.deepEqual(created.profile.studiedUnits, []);
+
+    const studied = store.markUnitStudied(created.token, 6);
+    assert.equal(studied.ok, true);
+    if (!studied.ok) return;
+    assert.deepEqual(studied.profile.studiedUnits, [6]);
+
+    const saved = store.recordAttempt(created.token, {
+      unitNumber: 1,
+      unitTitle: 'Learning vocabulary',
+      totalQuestions: 30,
+      correctCount: 24,
+      wrongCount: 6,
+      unansweredCount: 0,
+      percentage: 80,
+      pointsEarned: 240,
+      durationSeconds: 320,
+      mistakes: [],
+    });
+
+    assert.equal(saved.ok, true);
+    if (!saved.ok) return;
+    assert.equal(saved.profile.totalPoints, 240);
+    assert.deepEqual(saved.profile.completedUnits, [1]);
+    assert.deepEqual(saved.profile.studiedUnits, [1, 6]);
+    assert.equal(saved.profile.attempts.length, 1);
+
+    const fetched = store.getStudentByToken(created.token);
+    assert.ok(fetched);
+    assert.equal(fetched.totalPoints, 240);
+    assert.deepEqual(fetched.studiedUnits, [1, 6]);
+  } finally {
+    cleanup();
+  }
+});
+
+test('teacher authenticates with Jalolova@2026 and can update password with verification', () => {
+  const { store, cleanup } = createTempStore();
+  try {
+    const badLogin = store.loginTeacher('wrongpass');
+    assert.equal(badLogin.ok, false);
+
+    const goodLogin = store.loginTeacher('Jalolova@2026');
+    assert.equal(goodLogin.ok, true);
+    if (!goodLogin.ok) return;
+
+    // Mismatched confirm password fails
+    const mismatch = store.changeTeacherPassword(
+      goodLogin.token,
+      'Jalolova@2026',
+      'NewPass2027',
+      'Different2027',
+    );
+    assert.equal(mismatch.ok, false);
+
+    // Wrong old password fails
+    const wrongOld = store.changeTeacherPassword(
+      goodLogin.token,
+      'WrongOld',
+      'NewPass2027',
+      'NewPass2027',
+    );
+    assert.equal(wrongOld.ok, false);
+
+    // Valid password update succeeds
+    const changed = store.changeTeacherPassword(
+      goodLogin.token,
+      'Jalolova@2026',
+      'NewPass2027',
+      'NewPass2027',
+    );
+    assert.equal(changed.ok, true);
+
+    // Old password no longer works; new password works
+    assert.equal(store.loginTeacher('Jalolova@2026').ok, false);
+    assert.equal(store.loginTeacher('NewPass2027').ok, true);
+  } finally {
+    cleanup();
+  }
+});
