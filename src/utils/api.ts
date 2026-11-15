@@ -3,9 +3,46 @@ import type {
   StudentSummaryForTeacher,
   TestAttempt,
 } from '../types/quiz';
+import {
+  localCompleteUnitStudy,
+  localDeleteStudent,
+  localEnterStudent,
+  localFetchTeacherDashboard,
+  localGetStudentByToken,
+  localLoginTeacher,
+  localSubmitAttempt,
+  localUpdateTeacherPassword,
+} from './localFallbackStore';
 
 const STUDENT_TOKEN_KEY = 'lexischeck_student_token';
 const TEACHER_TOKEN_KEY = 'lexischeck_teacher_token';
+
+class BackendUnavailableError extends Error {
+  constructor() {
+    super('Backend API unavailable');
+    this.name = 'BackendUnavailableError';
+  }
+}
+
+async function fetchBackendJson(
+  url: string,
+  init?: RequestInit,
+): Promise<{ ok: boolean; status: number; data: Record<string, unknown> }> {
+  let res: Response;
+  try {
+    res = await fetch(url, init);
+  } catch {
+    throw new BackendUnavailableError();
+  }
+
+  const contentType = res.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    throw new BackendUnavailableError();
+  }
+
+  const data = (await res.json()) as Record<string, unknown>;
+  return { ok: res.ok, status: res.status, data };
+}
 
 export function getSavedStudentToken(): string | null {
   try {
@@ -46,38 +83,55 @@ export async function enterStudentAccount(
   className: string,
 ): Promise<{ status: 'created' | 'resumed'; profile: StudentProfile; token: string }> {
   const existingToken = getSavedStudentToken();
-  const res = await fetch('/api/student/enter', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(existingToken ? { 'x-student-token': existingToken } : {}),
-    },
-    body: JSON.stringify({ fullName, className }),
-  });
-
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.error || "Kirishda xatolik yuz berdi.");
+  try {
+    const { ok, data } = await fetchBackendJson('/api/student/enter', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(existingToken ? { 'x-student-token': existingToken } : {}),
+      },
+      body: JSON.stringify({ fullName, className }),
+    });
+    if (!ok) {
+      throw new Error((data.error as string) || "Kirishda xatolik yuz berdi.");
+    }
+    setSavedStudentToken(data.token as string);
+    return data as {
+      status: 'created' | 'resumed';
+      profile: StudentProfile;
+      token: string;
+    };
+  } catch (err) {
+    if (err instanceof BackendUnavailableError) {
+      const result = localEnterStudent(fullName, className, existingToken);
+      setSavedStudentToken(result.token);
+      return result;
+    }
+    throw err;
   }
-  setSavedStudentToken(data.token);
-  return data;
 }
 
 export async function fetchOwnStudentProfile(): Promise<StudentProfile | null> {
   const token = getSavedStudentToken();
   if (!token) return null;
 
-  const res = await fetch('/api/student/profile', {
-    headers: { 'x-student-token': token },
-  });
-  if (!res.ok) {
-    if (res.status === 401) {
-      setSavedStudentToken(null);
+  try {
+    const { ok, status, data } = await fetchBackendJson('/api/student/profile', {
+      headers: { 'x-student-token': token },
+    });
+    if (!ok) {
+      if (status === 401) {
+        setSavedStudentToken(null);
+      }
+      return null;
+    }
+    return data.profile as StudentProfile;
+  } catch (err) {
+    if (err instanceof BackendUnavailableError) {
+      return localGetStudentByToken(token);
     }
     return null;
   }
-  const data = await res.json();
-  return data.profile as StudentProfile;
 }
 
 export async function submitTestAttempt(
@@ -87,19 +141,25 @@ export async function submitTestAttempt(
   if (!token) {
     throw new Error("O'quvchi sessiyasi topilmadi. Qaytadan kiring.");
   }
-  const res = await fetch('/api/student/attempt', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-student-token': token,
-    },
-    body: JSON.stringify({ attempt }),
-  });
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.error || "Natijani saqlashda xatolik yuz berdi.");
+  try {
+    const { ok, data } = await fetchBackendJson('/api/student/attempt', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-student-token': token,
+      },
+      body: JSON.stringify({ attempt }),
+    });
+    if (!ok) {
+      throw new Error((data.error as string) || "Natijani saqlashda xatolik yuz berdi.");
+    }
+    return data as { profile: StudentProfile; attempt: TestAttempt };
+  } catch (err) {
+    if (err instanceof BackendUnavailableError) {
+      return localSubmitAttempt(token, attempt);
+    }
+    throw err;
   }
-  return data;
 }
 
 export async function completeUnitStudy(unitNumber: number): Promise<StudentProfile> {
@@ -107,33 +167,47 @@ export async function completeUnitStudy(unitNumber: number): Promise<StudentProf
   if (!token) {
     throw new Error("O'quvchi sessiyasi topilmadi. Qaytadan kiring.");
   }
-  const res = await fetch('/api/student/study-complete', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-student-token': token,
-    },
-    body: JSON.stringify({ unitNumber }),
-  });
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.error || "Lug'at holatini saqlab bo'lmadi.");
+  try {
+    const { ok, data } = await fetchBackendJson('/api/student/study-complete', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-student-token': token,
+      },
+      body: JSON.stringify({ unitNumber }),
+    });
+    if (!ok) {
+      throw new Error((data.error as string) || "Lug'at holatini saqlab bo'lmadi.");
+    }
+    return data.profile as StudentProfile;
+  } catch (err) {
+    if (err instanceof BackendUnavailableError) {
+      return localCompleteUnitStudy(token, unitNumber);
+    }
+    throw err;
   }
-  return data.profile as StudentProfile;
 }
 
 export async function loginTeacherAccount(password: string): Promise<string> {
-  const res = await fetch('/api/teacher/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ password }),
-  });
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.error || "Parol noto'g'ri.");
+  try {
+    const { ok, data } = await fetchBackendJson('/api/teacher/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+    if (!ok) {
+      throw new Error((data.error as string) || "Parol noto'g'ri.");
+    }
+    setSavedTeacherToken(data.token as string);
+    return data.token as string;
+  } catch (err) {
+    if (err instanceof BackendUnavailableError) {
+      const token = await localLoginTeacher(password);
+      setSavedTeacherToken(token);
+      return token;
+    }
+    throw err;
   }
-  setSavedTeacherToken(data.token);
-  return data.token as string;
 }
 
 export async function fetchTeacherDashboard(): Promise<StudentSummaryForTeacher[]> {
@@ -141,17 +215,23 @@ export async function fetchTeacherDashboard(): Promise<StudentSummaryForTeacher[
   if (!token) {
     throw new Error("O'qituvchi sessiyasi topilmadi.");
   }
-  const res = await fetch('/api/teacher/dashboard', {
-    headers: { 'x-teacher-token': token },
-  });
-  const data = await res.json();
-  if (!res.ok) {
-    if (res.status === 401) {
-      setSavedTeacherToken(null);
+  try {
+    const { ok, status, data } = await fetchBackendJson('/api/teacher/dashboard', {
+      headers: { 'x-teacher-token': token },
+    });
+    if (!ok) {
+      if (status === 401) {
+        setSavedTeacherToken(null);
+      }
+      throw new Error((data.error as string) || "Ma'lumotlarni yuklab bo'lmadi.");
     }
-    throw new Error(data.error || "Ma'lumotlarni yuklab bo'lmadi.");
+    return data.students as StudentSummaryForTeacher[];
+  } catch (err) {
+    if (err instanceof BackendUnavailableError) {
+      return localFetchTeacherDashboard(token);
+    }
+    throw err;
   }
-  return data.students as StudentSummaryForTeacher[];
 }
 
 export async function updateTeacherPassword(
@@ -163,17 +243,29 @@ export async function updateTeacherPassword(
   if (!token) {
     throw new Error("O'qituvchi sessiyasi topilmadi.");
   }
-  const res = await fetch('/api/teacher/change-password', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-teacher-token': token,
-    },
-    body: JSON.stringify({ oldPassword, newPassword, confirmPassword }),
-  });
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.error || "Parolni yangilab bo'lmadi.");
+  try {
+    const { ok, data } = await fetchBackendJson('/api/teacher/change-password', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-teacher-token': token,
+      },
+      body: JSON.stringify({ oldPassword, newPassword, confirmPassword }),
+    });
+    if (!ok) {
+      throw new Error((data.error as string) || "Parolni yangilab bo'lmadi.");
+    }
+  } catch (err) {
+    if (err instanceof BackendUnavailableError) {
+      await localUpdateTeacherPassword(
+        token,
+        oldPassword,
+        newPassword,
+        confirmPassword,
+      );
+      return;
+    }
+    throw err;
   }
 }
 
@@ -182,12 +274,22 @@ export async function deleteStudentByTeacher(studentId: string): Promise<void> {
   if (!token) {
     throw new Error("O'qituvchi sessiyasi topilmadi.");
   }
-  const res = await fetch(`/api/teacher/student/${encodeURIComponent(studentId)}`, {
-    method: 'DELETE',
-    headers: { 'x-teacher-token': token },
-  });
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.error || "Akkauntni o'chirib bo'lmadi.");
+  try {
+    const { ok, data } = await fetchBackendJson(
+      `/api/teacher/student/${encodeURIComponent(studentId)}`,
+      {
+        method: 'DELETE',
+        headers: { 'x-teacher-token': token },
+      },
+    );
+    if (!ok) {
+      throw new Error((data.error as string) || "Akkauntni o'chirib bo'lmadi.");
+    }
+  } catch (err) {
+    if (err instanceof BackendUnavailableError) {
+      localDeleteStudent(token, studentId);
+      return;
+    }
+    throw err;
   }
 }
