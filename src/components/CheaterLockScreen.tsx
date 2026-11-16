@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Eye, EyeOff, Lock, ShieldAlert, Unlock } from 'lucide-react';
-import { verifyCheaterUnlockCode } from '../utils/antiCheat';
+import { verifyCheaterCode } from '../utils/api';
 
 interface CheaterLockScreenProps {
   onUnlock: () => void;
@@ -10,16 +10,24 @@ export function CheaterLockScreen({ onUnlock }: CheaterLockScreenProps) {
   const [code, setCode] = useState('');
   const [showCode, setShowCode] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [verifying, setVerifying] = useState(false);
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!verifyCheaterUnlockCode(code)) {
-      setError("Kod notoʻgʻri. Test bloklangan holatda qoladi.");
-      return;
-    }
+    if (verifying) return;
+    setVerifying(true);
     setError(null);
-    setCode('');
-    onUnlock();
+    try {
+      const ok = await verifyCheaterCode(code);
+      if (!ok) {
+        setError("Kod notoʻgʻri. Test bloklangan holatda qoladi.");
+        return;
+      }
+      setCode('');
+      onUnlock();
+    } finally {
+      setVerifying(false);
+    }
   }
 
   return (
@@ -93,10 +101,11 @@ export function CheaterLockScreen({ onUnlock }: CheaterLockScreenProps) {
 
           <button
             type="submit"
-            className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-red-500"
+            disabled={verifying}
+            className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-red-500 disabled:opacity-60"
           >
             <Unlock className="h-4 w-4" />
-            <span>Ochish</span>
+            <span>{verifying ? 'Tekshirilmoqda...' : 'Ochish'}</span>
           </button>
         </form>
       </div>

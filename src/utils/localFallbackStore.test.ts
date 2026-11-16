@@ -7,7 +7,9 @@ import {
   localGetStudentByToken,
   localLoginTeacher,
   localSubmitAttempt,
+  localUpdateCheaterCode,
   localUpdateTeacherPassword,
+  localVerifyCheaterCode,
   type StorageLike,
 } from './localFallbackStore';
 
@@ -66,6 +68,18 @@ test('localFallbackStore supports student entry, lock, attempt save, and teacher
   );
   const newToken = await localLoginTeacher('NewPass@2026', storage);
   assert.ok(newToken.length > 10);
+
+  assert.equal(await localVerifyCheaterCode('2026Al1209.9', storage), true);
+  assert.equal(await localVerifyCheaterCode('wrong', storage), false);
+  await localUpdateCheaterCode(
+    newToken,
+    '2026Al1209.9',
+    'LocalCheat2027',
+    'LocalCheat2027',
+    storage,
+  );
+  assert.equal(await localVerifyCheaterCode('2026Al1209.9', storage), false);
+  assert.equal(await localVerifyCheaterCode('LocalCheat2027', storage), true);
 
   localDeleteStudent(newToken, entered.profile.id, storage);
   assert.equal(localFetchTeacherDashboard(newToken, storage).length, 0);

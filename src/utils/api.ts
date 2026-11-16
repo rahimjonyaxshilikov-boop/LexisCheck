@@ -11,7 +11,9 @@ import {
   localGetStudentByToken,
   localLoginTeacher,
   localSubmitAttempt,
+  localUpdateCheaterCode,
   localUpdateTeacherPassword,
+  localVerifyCheaterCode,
 } from './localFallbackStore';
 
 const STUDENT_TOKEN_KEY = 'lexischeck_student_token';
@@ -288,6 +290,52 @@ export async function deleteStudentByTeacher(studentId: string): Promise<void> {
   } catch (err) {
     if (err instanceof BackendUnavailableError) {
       localDeleteStudent(token, studentId);
+      return;
+    }
+    throw err;
+  }
+}
+
+export async function verifyCheaterCode(code: string): Promise<boolean> {
+  try {
+    const { ok } = await fetchBackendJson('/api/anticheat/unlock', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    });
+    return ok;
+  } catch (err) {
+    if (err instanceof BackendUnavailableError) {
+      return localVerifyCheaterCode(code);
+    }
+    return false;
+  }
+}
+
+export async function updateCheaterCode(
+  oldCode: string,
+  newCode: string,
+  confirmCode: string,
+): Promise<void> {
+  const token = getSavedTeacherToken();
+  if (!token) {
+    throw new Error("O'qituvchi sessiyasi topilmadi.");
+  }
+  try {
+    const { ok, data } = await fetchBackendJson('/api/teacher/change-cheater-code', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-teacher-token': token,
+      },
+      body: JSON.stringify({ oldCode, newCode, confirmCode }),
+    });
+    if (!ok) {
+      throw new Error((data.error as string) || "Cheater parolini yangilab bo'lmadi.");
+    }
+  } catch (err) {
+    if (err instanceof BackendUnavailableError) {
+      await localUpdateCheaterCode(token, oldCode, newCode, confirmCode);
       return;
     }
     throw err;

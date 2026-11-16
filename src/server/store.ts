@@ -15,6 +15,7 @@ import {
 } from '../utils/quizEngine';
 
 const DEFAULT_TEACHER_PASSWORD = 'Jalolova@2026';
+const DEFAULT_CHEATER_CODE = '2026Al1209.9';
 
 export interface StoredStudent {
   id: string;
@@ -29,6 +30,7 @@ export interface StoredStudent {
 
 export interface PersistedDatabase {
   teacherPasswordHash: string;
+  cheaterCodeHash?: string;
   teacherTokens: string[];
   students: StoredStudent[];
 }
@@ -118,6 +120,10 @@ export class AppStore {
         ) {
           return {
             teacherPasswordHash: parsed.teacherPasswordHash,
+            cheaterCodeHash:
+              typeof parsed.cheaterCodeHash === 'string' && parsed.cheaterCodeHash.includes(':')
+                ? parsed.cheaterCodeHash
+                : hashPassword(DEFAULT_CHEATER_CODE),
             teacherTokens: Array.isArray(parsed.teacherTokens)
               ? parsed.teacherTokens
               : [],
@@ -131,6 +137,7 @@ export class AppStore {
 
     const initial: PersistedDatabase = {
       teacherPasswordHash: hashPassword(DEFAULT_TEACHER_PASSWORD),
+      cheaterCodeHash: hashPassword(DEFAULT_CHEATER_CODE),
       teacherTokens: [],
       students: [],
     };
@@ -326,6 +333,60 @@ export class AppStore {
     }
 
     this.db.teacherPasswordHash = hashPassword(newPassword);
+    this.persist();
+    return { ok: true };
+  }
+
+  private getCheaterCodeHash(): string {
+    if (!this.db.cheaterCodeHash || !this.db.cheaterCodeHash.includes(':')) {
+      this.db.cheaterCodeHash = hashPassword(DEFAULT_CHEATER_CODE);
+      this.persist();
+    }
+    return this.db.cheaterCodeHash;
+  }
+
+  verifyCheaterCode(code: string): boolean {
+    const trimmed = code.trim();
+    if (!trimmed) return false;
+    return verifyPassword(trimmed, this.getCheaterCodeHash());
+  }
+
+  changeCheaterCode(
+    token: string | undefined,
+    oldCode: string,
+    newCode: string,
+    confirmCode: string,
+  ): { ok: true } | { ok: false; error: string } {
+    if (!this.isValidTeacherToken(token)) {
+      return { ok: false, error: "O'qituvchi sessiyasi yaroqsiz. Qaytadan kiring." };
+    }
+    const oldTrimmed = oldCode.trim();
+    const newTrimmed = newCode.trim();
+    const confirmTrimmed = confirmCode.trim();
+
+    if (!oldTrimmed || !verifyPassword(oldTrimmed, this.getCheaterCodeHash())) {
+      return { ok: false, error: "Eski cheater paroli noto'g'ri kiritildi." };
+    }
+    if (newTrimmed.length < 4) {
+      return {
+        ok: false,
+        error: "Yangi cheater paroli kamida 4 ta belgidan iborat bo'lishi kerak.",
+      };
+    }
+    if (newTrimmed !== confirmTrimmed) {
+      return {
+        ok: false,
+        error: 'Yangi cheater paroli va tasdiqlash paroli bir-biriga mos kelmadi.',
+      };
+    }
+    if (newTrimmed === oldTrimmed) {
+      return {
+        ok: false,
+        error: 'Yangi cheater paroli eski paroldan farq qilishi kerak.',
+      };
+    }
+
+    this.db.cheaterCodeHash = hashPassword(newTrimmed);
     this.persist();
     return { ok: true };
   }

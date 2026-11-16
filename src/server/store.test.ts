@@ -136,3 +136,40 @@ test('teacher authenticates with Jalolova@2026 and can update password with veri
     cleanup();
   }
 });
+
+test('teacher can verify and update cheater unlock code independently', () => {
+  const { store, cleanup } = createTempStore();
+  try {
+    assert.equal(store.verifyCheaterCode('2026Al1209.9'), true);
+    assert.equal(store.verifyCheaterCode('wrong-code'), false);
+
+    const login = store.loginTeacher('Jalolova@2026');
+    assert.equal(login.ok, true);
+    if (!login.ok) return;
+
+    // Unauthenticated token fails
+    const unauth = store.changeCheaterCode('bad-token', '2026Al1209.9', 'NewCheat99', 'NewCheat99');
+    assert.equal(unauth.ok, false);
+
+    // Wrong old code fails
+    const wrongOld = store.changeCheaterCode(login.token, 'WrongOld', 'NewCheat99', 'NewCheat99');
+    assert.equal(wrongOld.ok, false);
+
+    // Mismatched confirm fails
+    const mismatch = store.changeCheaterCode(login.token, '2026Al1209.9', 'NewCheat99', 'Other99');
+    assert.equal(mismatch.ok, false);
+
+    // Valid update works and invalidates previous code
+    const updated = store.changeCheaterCode(
+      login.token,
+      '2026Al1209.9',
+      'NewCheat99',
+      'NewCheat99',
+    );
+    assert.equal(updated.ok, true);
+    assert.equal(store.verifyCheaterCode('2026Al1209.9'), false);
+    assert.equal(store.verifyCheaterCode('NewCheat99'), true);
+  } finally {
+    cleanup();
+  }
+});

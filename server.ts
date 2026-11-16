@@ -135,6 +135,42 @@ async function startServer() {
     res.json({ ok: true });
   });
 
+  // Verify cheater unlock code
+  app.post('/api/anticheat/unlock', (req, res) => {
+    const { code } = req.body ?? {};
+    if (typeof code !== 'string') {
+      res.status(400).json({ error: 'Kod kiritilmadi.' });
+      return;
+    }
+    if (!store.verifyCheaterCode(code)) {
+      res.status(401).json({ error: "Kod notoʻgʻri. Test bloklangan holatda qoladi." });
+      return;
+    }
+    res.json({ ok: true });
+  });
+
+  // Teacher change cheater unlock code
+  app.post('/api/teacher/change-cheater-code', (req, res) => {
+    const token = req.header('x-teacher-token') ?? undefined;
+    const { oldCode, newCode, confirmCode } = req.body ?? {};
+    if (
+      typeof oldCode !== 'string' ||
+      typeof newCode !== 'string' ||
+      typeof confirmCode !== 'string'
+    ) {
+      res.status(400).json({ error: "Barcha kod maydonlarini to'ldiring." });
+      return;
+    }
+
+    const result = store.changeCheaterCode(token, oldCode, newCode, confirmCode);
+    if (!result.ok) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+
+    res.json({ ok: true });
+  });
+
   // Teacher can delete/reset a locked student account if needed
   app.delete('/api/teacher/student/:id', (req, res) => {
     const token = req.header('x-teacher-token') ?? undefined;

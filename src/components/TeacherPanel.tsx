@@ -7,6 +7,7 @@ import {
   Lock,
   LogOut,
   Search,
+  ShieldAlert,
   Trash2,
   X,
 } from 'lucide-react';
@@ -17,6 +18,7 @@ import {
   getSavedTeacherToken,
   loginTeacherAccount,
   setSavedTeacherToken,
+  updateCheaterCode,
   updateTeacherPassword,
 } from '../utils/api';
 import { formatCountdown, getAllSchoolClasses } from '../utils/quizEngine';
@@ -52,11 +54,15 @@ export function TeacherPanel({ onBack }: TeacherPanelProps) {
     useState<StudentSummaryForTeacher | null>(null);
   const [selectedAttempt, setSelectedAttempt] = useState<TestAttempt | null>(null);
 
-  // Change Password modal state
+  // Change Password / Cheater Code modal state
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordTab, setPasswordTab] = useState<'teacher' | 'cheater'>('teacher');
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [oldCheaterCode, setOldCheaterCode] = useState('');
+  const [newCheaterCode, setNewCheaterCode] = useState('');
+  const [confirmCheaterCode, setConfirmCheaterCode] = useState('');
   const [pwError, setPwError] = useState<string | null>(null);
   const [pwSuccess, setPwSuccess] = useState<string | null>(null);
   const [pwSubmitting, setPwSubmitting] = useState(false);
@@ -121,7 +127,7 @@ export function TeacherPanel({ onBack }: TeacherPanelProps) {
     setPwSubmitting(true);
     try {
       await updateTeacherPassword(oldPassword, newPassword, confirmPassword);
-      setPwSuccess("Parol muvaffaqiyatli yangilandi.");
+      setPwSuccess("O'qituvchi paroli muvaffaqiyatli yangilandi.");
       setOldPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -130,6 +136,31 @@ export function TeacherPanel({ onBack }: TeacherPanelProps) {
     } finally {
       setPwSubmitting(false);
     }
+  }
+
+  async function handleChangeCheaterCode(e: FormEvent) {
+    e.preventDefault();
+    setPwError(null);
+    setPwSuccess(null);
+    setPwSubmitting(true);
+    try {
+      await updateCheaterCode(oldCheaterCode, newCheaterCode, confirmCheaterCode);
+      setPwSuccess('Cheater paroli muvaffaqiyatli yangilandi.');
+      setOldCheaterCode('');
+      setNewCheaterCode('');
+      setConfirmCheaterCode('');
+    } catch (err) {
+      setPwError(err instanceof Error ? err.message : "Cheater parolini yangilab bo'lmadi.");
+    } finally {
+      setPwSubmitting(false);
+    }
+  }
+
+  function openSecurityModal(tab: 'teacher' | 'cheater') {
+    setPasswordTab(tab);
+    setPwError(null);
+    setPwSuccess(null);
+    setShowPasswordModal(true);
   }
 
   async function handleDeleteStudent(studentId: string) {
@@ -295,15 +326,20 @@ export function TeacherPanel({ onBack }: TeacherPanelProps) {
         <div className="flex flex-wrap items-center gap-2.5">
           <button
             type="button"
-            onClick={() => {
-              setPwError(null);
-              setPwSuccess(null);
-              setShowPasswordModal(true);
-            }}
+            onClick={() => openSecurityModal('teacher')}
             className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
           >
             <KeyRound className="h-3.5 w-3.5" />
             <span>Parolni yangilash</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => openSecurityModal('cheater')}
+            className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+          >
+            <ShieldAlert className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
+            <span>Cheater paroli</span>
           </button>
 
           <button
@@ -840,7 +876,7 @@ export function TeacherPanel({ onBack }: TeacherPanelProps) {
         </div>
       )}
 
-      {/* Change Password Modal */}
+      {/* Change Teacher Password & Cheater Code Modal */}
       {showPasswordModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-xs"
@@ -854,7 +890,9 @@ export function TeacherPanel({ onBack }: TeacherPanelProps) {
                 id="pw-modal-title"
                 className="text-lg font-bold text-slate-900 dark:text-slate-100"
               >
-                Oʻqituvchi parolini yangilash
+                {passwordTab === 'teacher'
+                  ? 'Oʻqituvchi parolini yangilash'
+                  : 'Cheater parolini yangilash'}
               </h2>
               <button
                 type="button"
@@ -866,94 +904,229 @@ export function TeacherPanel({ onBack }: TeacherPanelProps) {
               </button>
             </div>
 
-            <form onSubmit={handleChangePassword} className="mt-5 space-y-4">
-              <div>
-                <label
-                  htmlFor="old-password"
-                  className="block text-sm font-semibold text-slate-800 dark:text-slate-200"
-                >
-                  Eski parol
-                </label>
-                <input
-                  id="old-password"
-                  type="password"
-                  required
-                  value={oldPassword}
-                  onChange={(e) => setOldPassword(e.target.value)}
-                  className="mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-sky-600 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-                />
-              </div>
+            <div
+              className="mt-4 grid grid-cols-2 rounded-xl border border-slate-200 bg-slate-100 p-1 dark:border-slate-800 dark:bg-slate-950"
+              role="tablist"
+              aria-label="Parol turi"
+            >
+              <button
+                type="button"
+                role="tab"
+                aria-selected={passwordTab === 'teacher'}
+                onClick={() => {
+                  setPasswordTab('teacher');
+                  setPwError(null);
+                  setPwSuccess(null);
+                }}
+                className={`min-h-[34px] rounded-lg px-3 text-xs font-semibold transition-colors ${
+                  passwordTab === 'teacher'
+                    ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-800 dark:text-slate-100'
+                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
+                }`}
+              >
+                Profil paroli
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={passwordTab === 'cheater'}
+                onClick={() => {
+                  setPasswordTab('cheater');
+                  setPwError(null);
+                  setPwSuccess(null);
+                }}
+                className={`min-h-[34px] rounded-lg px-3 text-xs font-semibold transition-colors ${
+                  passwordTab === 'cheater'
+                    ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-800 dark:text-slate-100'
+                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
+                }`}
+              >
+                Cheater paroli
+              </button>
+            </div>
 
-              <div>
-                <label
-                  htmlFor="new-password"
-                  className="block text-sm font-semibold text-slate-800 dark:text-slate-200"
-                >
-                  Yangi parol
-                </label>
-                <input
-                  id="new-password"
-                  type="password"
-                  required
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-sky-600 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="confirm-password"
-                  className="block text-sm font-semibold text-slate-800 dark:text-slate-200"
-                >
-                  Yangi parolni tasdiqlash
-                </label>
-                <input
-                  id="confirm-password"
-                  type="password"
-                  required
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-sky-600 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-                />
-              </div>
-
-              {pwError && (
-                <div
-                  role="alert"
-                  className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300"
-                >
-                  {pwError}
+            {passwordTab === 'teacher' ? (
+              <form onSubmit={handleChangePassword} className="mt-5 space-y-4">
+                <div>
+                  <label
+                    htmlFor="old-password"
+                    className="block text-sm font-semibold text-slate-800 dark:text-slate-200"
+                  >
+                    Eski parol
+                  </label>
+                  <input
+                    id="old-password"
+                    type="password"
+                    required
+                    value={oldPassword}
+                    onChange={(e) => setOldPassword(e.target.value)}
+                    className="mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-sky-600 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                  />
                 </div>
-              )}
 
-              {pwSuccess && (
-                <div
-                  role="status"
-                  className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300"
-                >
-                  <CheckCircle2 className="h-4 w-4 shrink-0" />
-                  <span>{pwSuccess}</span>
+                <div>
+                  <label
+                    htmlFor="new-password"
+                    className="block text-sm font-semibold text-slate-800 dark:text-slate-200"
+                  >
+                    Yangi parol
+                  </label>
+                  <input
+                    id="new-password"
+                    type="password"
+                    required
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-sky-600 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                  />
                 </div>
-              )}
 
-              <div className="flex items-center justify-end gap-2.5 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowPasswordModal(false)}
-                  className="min-h-[40px] rounded-xl border border-slate-200 px-4 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-                >
-                  Yopish
-                </button>
-                <button
-                  type="submit"
-                  disabled={pwSubmitting}
-                  className="min-h-[40px] rounded-xl bg-sky-600 px-5 text-xs font-semibold text-white hover:bg-sky-700 disabled:opacity-60 dark:bg-sky-500 dark:text-slate-950"
-                >
-                  {pwSubmitting ? 'Saqlanmoqda...' : 'Parolni saqlash'}
-                </button>
-              </div>
-            </form>
+                <div>
+                  <label
+                    htmlFor="confirm-password"
+                    className="block text-sm font-semibold text-slate-800 dark:text-slate-200"
+                  >
+                    Yangi parolni tasdiqlash
+                  </label>
+                  <input
+                    id="confirm-password"
+                    type="password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-sky-600 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                  />
+                </div>
+
+                {pwError && (
+                  <div
+                    role="alert"
+                    className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300"
+                  >
+                    {pwError}
+                  </div>
+                )}
+
+                {pwSuccess && (
+                  <div
+                    role="status"
+                    className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300"
+                  >
+                    <CheckCircle2 className="h-4 w-4 shrink-0" />
+                    <span>{pwSuccess}</span>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-end gap-2.5 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswordModal(false)}
+                    className="min-h-[40px] rounded-xl border border-slate-200 px-4 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                  >
+                    Yopish
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={pwSubmitting}
+                    className="min-h-[40px] rounded-xl bg-sky-600 px-5 text-xs font-semibold text-white hover:bg-sky-700 disabled:opacity-60 dark:bg-sky-500 dark:text-slate-950"
+                  >
+                    {pwSubmitting ? 'Saqlanmoqda...' : 'Parolni saqlash'}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleChangeCheaterCode} className="mt-5 space-y-4">
+                <div>
+                  <label
+                    htmlFor="old-cheater-code"
+                    className="block text-sm font-semibold text-slate-800 dark:text-slate-200"
+                  >
+                    Eski cheater paroli
+                  </label>
+                  <input
+                    id="old-cheater-code"
+                    type="password"
+                    autoComplete="off"
+                    required
+                    value={oldCheaterCode}
+                    onChange={(e) => setOldCheaterCode(e.target.value)}
+                    className="mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 font-mono-tabular text-sm text-slate-900 focus:border-sky-600 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="new-cheater-code"
+                    className="block text-sm font-semibold text-slate-800 dark:text-slate-200"
+                  >
+                    Yangi cheater paroli
+                  </label>
+                  <input
+                    id="new-cheater-code"
+                    type="password"
+                    autoComplete="off"
+                    required
+                    value={newCheaterCode}
+                    onChange={(e) => setNewCheaterCode(e.target.value)}
+                    className="mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 font-mono-tabular text-sm text-slate-900 focus:border-sky-600 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="confirm-cheater-code"
+                    className="block text-sm font-semibold text-slate-800 dark:text-slate-200"
+                  >
+                    Yangi cheater parolini tasdiqlash
+                  </label>
+                  <input
+                    id="confirm-cheater-code"
+                    type="password"
+                    autoComplete="off"
+                    required
+                    value={confirmCheaterCode}
+                    onChange={(e) => setConfirmCheaterCode(e.target.value)}
+                    className="mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 font-mono-tabular text-sm text-slate-900 focus:border-sky-600 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                  />
+                </div>
+
+                {pwError && (
+                  <div
+                    role="alert"
+                    className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300"
+                  >
+                    {pwError}
+                  </div>
+                )}
+
+                {pwSuccess && (
+                  <div
+                    role="status"
+                    className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300"
+                  >
+                    <CheckCircle2 className="h-4 w-4 shrink-0" />
+                    <span>{pwSuccess}</span>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-end gap-2.5 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswordModal(false)}
+                    className="min-h-[40px] rounded-xl border border-slate-200 px-4 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                  >
+                    Yopish
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={pwSubmitting}
+                    className="min-h-[40px] rounded-xl bg-sky-600 px-5 text-xs font-semibold text-white hover:bg-sky-700 disabled:opacity-60 dark:bg-sky-500 dark:text-slate-950"
+                  >
+                    {pwSubmitting ? 'Saqlanmoqda...' : 'Cheater parolini saqlash'}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

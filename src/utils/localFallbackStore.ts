@@ -13,6 +13,8 @@ import {
 const LOCAL_DB_KEY = 'lexischeck_local_db_v1';
 const DEFAULT_TEACHER_HASH =
   'lexischeck_salt_2026:26892f86af0f5b04678fc3c063f9caab08b4356ab0e601a48ab244f026fcdb48';
+const DEFAULT_CHEATER_CODE_HASH =
+  'lexischeck_cheater_salt_2026:478f38966c399d456d7a573c075c9a074a16d516472afe548e5fc531a0179e93';
 
 interface StoredLocalStudent {
   id: string;
@@ -27,6 +29,7 @@ interface StoredLocalStudent {
 
 interface LocalDatabase {
   teacherPasswordHash: string;
+  cheaterCodeHash?: string;
   teacherTokens: string[];
   students: StoredLocalStudent[];
 }
@@ -99,6 +102,10 @@ function loadDb(storage: StorageLike): LocalDatabase {
       ) {
         return {
           teacherPasswordHash: parsed.teacherPasswordHash,
+          cheaterCodeHash:
+            typeof parsed.cheaterCodeHash === 'string' && parsed.cheaterCodeHash.includes(':')
+              ? parsed.cheaterCodeHash
+              : DEFAULT_CHEATER_CODE_HASH,
           teacherTokens: Array.isArray(parsed.teacherTokens)
             ? parsed.teacherTokens
             : [],
@@ -111,6 +118,7 @@ function loadDb(storage: StorageLike): LocalDatabase {
   }
   const initial: LocalDatabase = {
     teacherPasswordHash: DEFAULT_TEACHER_HASH,
+    cheaterCodeHash: DEFAULT_CHEATER_CODE_HASH,
     teacherTokens: [],
     students: [],
   };
@@ -308,6 +316,51 @@ export async function localUpdateTeacherPassword(
     throw new Error("Yangi parol eski paroldan farq qilishi kerak.");
   }
   db.teacherPasswordHash = await hashTeacherPassword(newPassword);
+  saveDb(storage, db);
+}
+
+export async function localVerifyCheaterCode(
+  code: string,
+  customStorage?: StorageLike,
+): Promise<boolean> {
+  const trimmed = code.trim();
+  if (!trimmed) return false;
+  const storage = getStorage(customStorage);
+  const db = loadDb(storage);
+  const hash = db.cheaterCodeHash || DEFAULT_CHEATER_CODE_HASH;
+  return verifyTeacherPassword(trimmed, hash);
+}
+
+export async function localUpdateCheaterCode(
+  token: string,
+  oldCode: string,
+  newCode: string,
+  confirmCode: string,
+  customStorage?: StorageLike,
+): Promise<void> {
+  const storage = getStorage(customStorage);
+  const db = loadDb(storage);
+  if (!db.teacherTokens.includes(token)) {
+    throw new Error("O'qituvchi sessiyasi yaroqsiz. Qaytadan kiring.");
+  }
+  const oldTrimmed = oldCode.trim();
+  const newTrimmed = newCode.trim();
+  const confirmTrimmed = confirmCode.trim();
+  const currentHash = db.cheaterCodeHash || DEFAULT_CHEATER_CODE_HASH;
+
+  if (!oldTrimmed || !(await verifyTeacherPassword(oldTrimmed, currentHash))) {
+    throw new Error("Eski cheater paroli noto'g'ri kiritildi.");
+  }
+  if (newTrimmed.length < 4) {
+    throw new Error("Yangi cheater paroli kamida 4 ta belgidan iborat bo'lishi kerak.");
+  }
+  if (newTrimmed !== confirmTrimmed) {
+    throw new Error('Yangi cheater paroli va tasdiqlash paroli bir-biriga mos kelmadi.');
+  }
+  if (newTrimmed === oldTrimmed) {
+    throw new Error('Yangi cheater paroli eski paroldan farq qilishi kerak.');
+  }
+  db.cheaterCodeHash = await hashTeacherPassword(newTrimmed);
   saveDb(storage, db);
 }
 
