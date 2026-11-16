@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ALL_UNITS, getUnitByNumber } from './index';
+import { TOTAL_UNITS } from '../../utils/quizEngine';
 
-test('ALL_UNITS contains exactly Units 1 through 20 in order', () => {
-  assert.equal(ALL_UNITS.length, 20);
+test('ALL_UNITS contains exactly Units 1 through 101 in order', () => {
+  assert.equal(ALL_UNITS.length, 101);
+  assert.equal(TOTAL_UNITS, 101);
   ALL_UNITS.forEach((unit, idx) => {
     assert.equal(unit.unitNumber, idx + 1);
     assert.ok(unit.title.trim().length > 0);
@@ -55,5 +57,9 @@ test('Every unit has at least 30 unique, well-formed questions with no duplicate
 test('getUnitByNumber finds valid units and returns undefined for missing ones', () => {
   assert.equal(getUnitByNumber(1)?.title, 'Learning vocabulary');
   assert.equal(getUnitByNumber(20)?.title, 'Theatre and cinema');
-  assert.equal(getUnitByNumber(21), undefined);
+  assert.equal(getUnitByNumber(21)?.title, 'Music');
+  assert.equal(getUnitByNumber(51)?.title, 'Number, quantity, degree and intensity');
+  assert.equal(getUnitByNumber(91)?.title, 'Expressions with get');
+  assert.equal(getUnitByNumber(101)?.title, 'US English');
+  assert.equal(getUnitByNumber(102), undefined);
 });

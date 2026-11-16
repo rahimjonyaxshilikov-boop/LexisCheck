@@ -11,6 +11,7 @@ import {
   calculateStudentAggregates,
   isValidSchoolClass,
   normalizeStudentName,
+  TOTAL_UNITS,
 } from '../utils/quizEngine';
 
 const DEFAULT_TEACHER_PASSWORD = 'Jalolova@2026';
@@ -264,7 +265,7 @@ export class AppStore {
     if (!found) {
       return { ok: false, error: "Akkaunt topilmadi yoki ruxsat yo'q." };
     }
-    if (!Number.isInteger(unitNumber) || unitNumber < 1 || unitNumber > 20) {
+    if (!Number.isInteger(unitNumber) || unitNumber < 1 || unitNumber > TOTAL_UNITS) {
       return { ok: false, error: "Unit raqami noto'g'ri." };
     }
     const current = Array.isArray(found.studiedUnits) ? found.studiedUnits : [];

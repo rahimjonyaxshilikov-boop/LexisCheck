@@ -20,6 +20,7 @@ import {
   updateTeacherPassword,
 } from '../utils/api';
 import { formatCountdown, getAllSchoolClasses } from '../utils/quizEngine';
+import { ALL_UNITS } from '../data/units';
 import {
   analyzeClassAndMistakes,
   analyzeStudentProgress,
@@ -195,7 +196,7 @@ export function TeacherPanel({ onBack }: TeacherPanelProps) {
         `"${s.fullName.replace(/"/g, '""')}"`,
         s.className,
         String(s.totalPoints),
-        `${s.completedUnits.length}/20`,
+        `${s.completedUnits.length}/${ALL_UNITS.length}`,
         String(s.averagePercentage),
         String(s.attempts.length),
       ]),
@@ -383,9 +384,9 @@ export function TeacherPanel({ onBack }: TeacherPanelProps) {
           className="min-h-[42px] rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-800 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
         >
           <option value="all">Barcha unitlar</option>
-          {Array.from({ length: 20 }, (_, i) => i + 1).map((u) => (
-            <option key={u} value={String(u)}>
-              Unit {u}
+          {ALL_UNITS.map((u) => (
+            <option key={u.unitNumber} value={String(u.unitNumber)}>
+              Unit {u.unitNumber}: {u.title}
             </option>
           ))}
         </select>
@@ -561,7 +562,7 @@ export function TeacherPanel({ onBack }: TeacherPanelProps) {
                         {s.totalPoints}
                       </td>
                       <td className="px-4 py-3.5 font-mono-tabular text-slate-700 dark:text-slate-300">
-                        {s.completedUnits.length}/20
+                        {s.completedUnits.length}/{ALL_UNITS.length}
                       </td>
                       <td className="px-4 py-3.5 font-mono-tabular text-slate-700 dark:text-slate-300">
                         {s.averagePercentage}%
@@ -611,7 +612,7 @@ export function TeacherPanel({ onBack }: TeacherPanelProps) {
             <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-4 dark:border-slate-800">
               <div>
                 <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                  {selectedStudent.className} sinf · Umumiy ball: {selectedStudent.totalPoints} · Bajarilgan unitlar: {selectedStudent.completedUnits.length}/20
+                  {selectedStudent.className} sinf · Umumiy ball: {selectedStudent.totalPoints} · Bajarilgan unitlar: {selectedStudent.completedUnits.length}/{ALL_UNITS.length}
                 </div>
                 <h2 className="mt-0.5 text-lg font-bold text-slate-900 dark:text-slate-100">
                   {selectedStudent.fullName}

@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { ArrowRight, BookOpen, Lock, ShieldCheck } from 'lucide-react';
-import { SCHOOL_GRADES, SCHOOL_SECTIONS } from '../utils/quizEngine';
+import { SCHOOL_GRADES, SCHOOL_SECTIONS, TOTAL_UNITS } from '../utils/quizEngine';
 
 interface LoginScreenProps {
   onSuccessEnter: (fullName: string, className: string) => Promise<void>;
@@ -48,7 +48,7 @@ export function LoginScreen({ onSuccessEnter, onOpenTeacher }: LoginScreenProps)
               <span aria-hidden="true">·</span>
               <span>Upper-Intermediate</span>
               <span aria-hidden="true">·</span>
-              <span>1–20-unitlar</span>
+              <span>1–{TOTAL_UNITS}-unitlar</span>
             </div>
 
             <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl [text-wrap:balance] dark:text-slate-50">
@@ -64,7 +64,7 @@ export function LoginScreen({ onSuccessEnter, onOpenTeacher }: LoginScreenProps)
           <div className="mt-8 grid grid-cols-3 gap-4 border-t border-slate-200 pt-6 dark:border-slate-800">
             <div>
               <div className="font-mono-tabular text-2xl font-semibold text-slate-900 dark:text-slate-100">
-                20
+                {TOTAL_UNITS}
               </div>
               <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                 Oʻquv uniti

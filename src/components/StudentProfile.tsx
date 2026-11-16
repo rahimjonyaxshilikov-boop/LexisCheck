@@ -9,7 +9,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import type { StudentProfile as StudentProfileType, TestAttempt } from '../types/quiz';
-import { formatCountdown } from '../utils/quizEngine';
+import { formatCountdown, TOTAL_UNITS } from '../utils/quizEngine';
 import {
   analyzeStudentProgress,
   collectStudentMistakeBank,
@@ -87,7 +87,7 @@ export function StudentProfile({
             </div>
             <div>
               <div className="font-mono-tabular text-2xl font-bold text-slate-900 dark:text-slate-100">
-                {student.completedUnits.length}/20
+                {student.completedUnits.length}/{TOTAL_UNITS}
               </div>
               <div className="text-xs text-slate-500 dark:text-slate-400">Unitlar</div>
             </div>

@@ -1,5 +1,5 @@
 import type { StudentProfile, TestAttempt } from '../types/quiz';
-import { formatCountdown } from './quizEngine';
+import { formatCountdown, TOTAL_UNITS } from './quizEngine';
 
 export function buildResultShareText(
   student: StudentProfile,
@@ -212,7 +212,7 @@ export async function renderResultCardBlob(
   ctx.fillStyle = '#334155';
   ctx.font = '600 21px system-ui, -apple-system, sans-serif';
   ctx.fillText(
-    `Jami savollar: ${attempt.totalQuestions} ta   ·   Bajarilgan unitlar: ${student.completedUnits.length}/20`,
+    `Jami savollar: ${attempt.totalQuestions} ta   ·   Bajarilgan unitlar: ${student.completedUnits.length}/${TOTAL_UNITS}`,
     126,
     602,
   );

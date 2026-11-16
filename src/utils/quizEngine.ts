@@ -5,6 +5,7 @@ import type {
   TestAttempt,
 } from '../types/quiz';
 
+export const TOTAL_UNITS = 101;
 export const TEST_DURATION_SECONDS = 10 * 60; // 10 minutes per unit test
 export const POINTS_PER_CORRECT = 10;
 
@@ -144,7 +145,7 @@ export function gradeQuiz(
 
 /**
  * Computes cumulative total points by taking the highest pointsEarned per unit
- * so students build mastery across all 20 units rather than farming one unit.
+ * so students build mastery across all 101 units rather than farming one unit.
  */
 export function calculateStudentAggregates(attempts: readonly TestAttempt[]): {
   totalPoints: number;

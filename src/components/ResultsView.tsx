@@ -12,7 +12,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import type { StudentProfile, TestAttempt } from '../types/quiz';
-import { formatCountdown } from '../utils/quizEngine';
+import { formatCountdown, TOTAL_UNITS } from '../utils/quizEngine';
 import {
   buildResultImageFilename,
   buildResultShareText,
@@ -156,7 +156,7 @@ export function ResultsView({
     }
   }
 
-  const nextUnitNumber = attempt.unitNumber < 20 ? attempt.unitNumber + 1 : null;
+  const nextUnitNumber = attempt.unitNumber < TOTAL_UNITS ? attempt.unitNumber + 1 : null;
 
   return (
     <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
