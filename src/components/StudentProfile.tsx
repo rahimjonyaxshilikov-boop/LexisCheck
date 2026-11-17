@@ -6,10 +6,19 @@ import {
   CheckCircle2,
   Eye,
   EyeOff,
+  Play,
   RotateCcw,
+  Sparkles,
+  UserCheck,
+  X,
 } from 'lucide-react';
 import type { StudentProfile as StudentProfileType, TestAttempt } from '../types/quiz';
-import { formatCountdown, TOTAL_UNITS } from '../utils/quizEngine';
+import { ALL_UNITS } from '../data/units';
+import {
+  formatCountdown,
+  getStudentMasteryRank,
+  TOTAL_UNITS,
+} from '../utils/quizEngine';
 import {
   analyzeStudentProgress,
   collectStudentMistakeBank,
@@ -18,6 +27,8 @@ import { ProgressLineChart, TrendBadge } from './AnalyticsPrimitives';
 
 interface StudentProfileProps {
   student: StudentProfileType;
+  welcomeBackNotice?: boolean;
+  onDismissWelcomeBack?: () => void;
   onBackToUnits: () => void;
   onInspectAttempt: (attempt: TestAttempt) => void;
   onRetakeUnit: (unitNumber: number) => void;
@@ -27,12 +38,18 @@ type ProfileTab = 'history' | 'mistakes';
 
 export function StudentProfile({
   student,
+  welcomeBackNotice = false,
+  onDismissWelcomeBack,
   onBackToUnits,
   onInspectAttempt,
   onRetakeUnit,
 }: StudentProfileProps) {
   const [activeTab, setActiveTab] = useState<ProfileTab>('history');
   const [revealedIds, setRevealedIds] = useState<Set<string>>(() => new Set());
+  const [drillOpen, setDrillOpen] = useState(false);
+  const [drillIdx, setDrillIdx] = useState(0);
+  const [drillSelectedOpt, setDrillSelectedOpt] = useState<string | null>(null);
+  const [drillScore, setDrillScore] = useState(0);
 
   const analytics = useMemo(
     () => analyzeStudentProgress(student.attempts),
@@ -43,6 +60,27 @@ export function StudentProfile({
     () => collectStudentMistakeBank(student.attempts),
     [student.attempts],
   );
+
+  const masteryRank = useMemo(
+    () => getStudentMasteryRank(student.totalPoints),
+    [student.totalPoints],
+  );
+
+  const activeDrillItem = mistakeBank[drillIdx] ?? null;
+  const activeDrillOptions = useMemo(() => {
+    if (!activeDrillItem) return [];
+    const unit = ALL_UNITS.find((u) => u.unitNumber === activeDrillItem.unitNumber);
+    const originalQ = unit?.questions.find((q) => q.id === activeDrillItem.questionId);
+    if (originalQ) return [...originalQ.options];
+    return [activeDrillItem.correctAnswer];
+  }, [activeDrillItem]);
+
+  function startMistakeDrill() {
+    setDrillIdx(0);
+    setDrillSelectedOpt(null);
+    setDrillScore(0);
+    setDrillOpen(true);
+  }
 
   function toggleReveal(questionId: string) {
     setRevealedIds((prev) => {
@@ -55,7 +93,7 @@ export function StudentProfile({
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
-      <div className="mb-5">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <button
           type="button"
           onClick={onBackToUnits}
@@ -64,7 +102,44 @@ export function StudentProfile({
           <ArrowLeft className="h-4 w-4" />
           <span>Unitlarga qaytish</span>
         </button>
+
+        <button
+          type="button"
+          onClick={onBackToUnits}
+          className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl bg-sky-600 px-4 text-xs font-semibold text-white transition-colors hover:bg-sky-700 dark:bg-sky-500 dark:text-slate-950 dark:hover:bg-sky-400"
+        >
+          <Play className="h-3.5 w-3.5" />
+          <span>Test ishlash</span>
+        </button>
       </div>
+
+      {welcomeBackNotice && (
+        <div
+          data-testid="profile-welcome-back"
+          role="status"
+          className="mb-5 flex items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-200"
+        >
+          <div className="flex items-center gap-3">
+            <UserCheck className="h-5 w-5 shrink-0 text-emerald-700 dark:text-emerald-400" />
+            <div>
+              <span className="font-bold">Siz avval ham kirgan ekansiz, profilga kiramiz!</span>{' '}
+              <span className="text-emerald-800 dark:text-emerald-300">
+                Barcha avvalgi natijalaringiz va ballaringiz saqlangan.
+              </span>
+            </div>
+          </div>
+          {onDismissWelcomeBack && (
+            <button
+              type="button"
+              onClick={onDismissWelcomeBack}
+              aria-label="Xabarni yopish"
+              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-emerald-700 hover:bg-emerald-100 dark:text-emerald-300 dark:hover:bg-emerald-900/50"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Profile Summary */}
       <section className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 dark:border-slate-800 dark:bg-slate-900">
@@ -97,6 +172,29 @@ export function StudentProfile({
               </div>
               <div className="text-xs text-slate-500 dark:text-slate-400">Oʻrtacha</div>
             </div>
+          </div>
+        </div>
+
+        {/* Mastery Rank Progress Strip */}
+        <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50/80 p-3.5 dark:border-slate-800 dark:bg-slate-950/70">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+            <span className="inline-flex items-center gap-1.5 font-semibold text-slate-800 dark:text-slate-200">
+              <Sparkles className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+              <span>
+                Daraja {masteryRank.level}: {masteryRank.title}
+              </span>
+            </span>
+            <span className="font-mono-tabular text-slate-500 dark:text-slate-400">
+              {masteryRank.nextTitle && masteryRank.nextThresholdPoints !== null
+                ? `Keyingi daraja (${masteryRank.nextTitle}): ${student.totalPoints}/${masteryRank.nextThresholdPoints} ball`
+                : 'Eng yuqori daraja zabt etildi!'}
+            </span>
+          </div>
+          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+            <div
+              className="h-full rounded-full bg-sky-600 transition-[width] duration-300 dark:bg-sky-400"
+              style={{ width: `${masteryRank.progressPercent}%` }}
+            />
           </div>
         </div>
 
@@ -279,8 +377,101 @@ export function StudentProfile({
             </p>
           </div>
         ) : (
-          <div className="mt-4 space-y-3">
-            {mistakeBank.map((item) => {
+          <div className="mt-4 space-y-4">
+            {/* Smart Mistake Flash Practice Card */}
+            {!drillOpen ? (
+              <div className="flex flex-col justify-between gap-3 rounded-2xl border border-sky-200 bg-sky-50/70 p-4 sm:flex-row sm:items-center dark:border-sky-900/60 dark:bg-sky-950/30">
+                <div>
+                  <div className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                    Xatolar ustida tezkor mashq
+                  </div>
+                  <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">
+                    Avval xato qilgan {mistakeBank.length} ta savolingizni qayta tekshirib mustahkamlang.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={startMistakeDrill}
+                  className="inline-flex min-h-[38px] shrink-0 items-center gap-1.5 rounded-xl bg-sky-600 px-4 text-xs font-semibold text-white hover:bg-sky-700 dark:bg-sky-500 dark:text-slate-950"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span>Mashqni boshlash</span>
+                </button>
+              </div>
+            ) : activeDrillItem ? (
+              <div className="rounded-2xl border border-sky-200 bg-white p-5 shadow-xs dark:border-sky-900/60 dark:bg-slate-900">
+                <div className="flex items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
+                  <span className="font-mono-tabular font-semibold text-sky-700 dark:text-sky-400">
+                    Mashq {drillIdx + 1}/{mistakeBank.length} · Unit {activeDrillItem.unitNumber}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setDrillOpen(false)}
+                    className="font-semibold text-slate-600 hover:underline dark:text-slate-300"
+                  >
+                    Yopish
+                  </button>
+                </div>
+                <p className="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">
+                  {activeDrillItem.prompt}
+                </p>
+                <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {activeDrillOptions.map((opt) => {
+                    const chosen = drillSelectedOpt === opt;
+                    const isRight = opt === activeDrillItem.correctAnswer;
+                    const answered = drillSelectedOpt !== null;
+                    return (
+                      <button
+                        key={opt}
+                        type="button"
+                        disabled={answered}
+                        onClick={() => {
+                          setDrillSelectedOpt(opt);
+                          if (isRight) setDrillScore((s) => s + 1);
+                        }}
+                        className={`min-h-[42px] rounded-xl border px-3.5 py-2 text-left text-sm font-medium transition-colors ${
+                          answered
+                            ? isRight
+                              ? 'border-emerald-500 bg-emerald-50 text-emerald-900 dark:border-emerald-500 dark:bg-emerald-950/40 dark:text-emerald-200'
+                              : chosen
+                                ? 'border-red-400 bg-red-50 text-red-900 dark:border-red-500 dark:bg-red-950/40 dark:text-red-200'
+                                : 'border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400'
+                            : 'border-slate-200 bg-slate-50 text-slate-800 hover:border-sky-400 hover:bg-sky-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        {opt}
+                      </button>
+                    );
+                  })}
+                </div>
+                {drillSelectedOpt !== null && (
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3 dark:border-slate-800">
+                    <span className="text-xs text-slate-600 dark:text-slate-400">
+                      {activeDrillItem.explanation}
+                    </span>
+                    {drillIdx < mistakeBank.length - 1 ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDrillIdx((i) => i + 1);
+                          setDrillSelectedOpt(null);
+                        }}
+                        className="min-h-[36px] rounded-lg bg-sky-600 px-3.5 text-xs font-semibold text-white hover:bg-sky-700 dark:bg-sky-500 dark:text-slate-950"
+                      >
+                        Keyingi savol
+                      </button>
+                    ) : (
+                      <span className="font-mono-tabular text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                        Yakunlandi: {drillScore}/{mistakeBank.length} toʻgʻri
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : null}
+
+            <div className="space-y-3">
+              {mistakeBank.map((item) => {
               const isRevealed = revealedIds.has(item.questionId);
               return (
                 <article
@@ -346,6 +537,7 @@ export function StudentProfile({
                 </article>
               );
             })}
+            </div>
           </div>
         )}
       </section>

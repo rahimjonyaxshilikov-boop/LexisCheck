@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import type { ShuffledQuestion, UnitData } from '../types/quiz';
 import {
-  TEST_DURATION_SECONDS,
+  DEFAULT_TEST_DURATION_MINUTES,
   formatCountdown,
   gradeQuiz,
   prepareShuffledQuiz,
@@ -27,6 +27,7 @@ import {
 
 interface TestRunnerProps {
   unit: UnitData;
+  testDurationMinutes?: number;
   darkMode: boolean;
   onToggleDarkMode: () => void;
   onFinishTest: (result: GradeQuizResult, elapsedSeconds: number) => Promise<void>;
@@ -38,12 +39,14 @@ const OPTION_LETTERS = ['A', 'B', 'C', 'D'] as const;
 
 export function TestRunner({
   unit,
+  testDurationMinutes = DEFAULT_TEST_DURATION_MINUTES,
   darkMode,
   onToggleDarkMode,
   onFinishTest,
   onCancelTest,
   onTriggerCheaterLock,
 }: TestRunnerProps) {
+  const totalDurationSeconds = Math.max(60, Math.round(testDurationMinutes * 60));
   // Shuffle questions & options once when the test mounts
   const shuffledQuestions: ShuffledQuestion[] = useMemo(
     () => prepareShuffledQuiz(unit.questions),
@@ -53,7 +56,7 @@ export function TestRunner({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [flaggedIds, setFlaggedIds] = useState<Set<string>>(() => new Set());
-  const [secondsLeft, setSecondsLeft] = useState(TEST_DURATION_SECONDS);
+  const [secondsLeft, setSecondsLeft] = useState(totalDurationSeconds);
   const [showNavDrawer, setShowNavDrawer] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
   const [confirmSubmit, setConfirmSubmit] = useState(false);
@@ -90,7 +93,7 @@ export function TestRunner({
 
     try {
       const graded = gradeQuiz(shuffledQuestions, answersRef.current);
-      const elapsed = Math.max(1, TEST_DURATION_SECONDS - secondsLeftRef.current);
+      const elapsed = Math.max(1, totalDurationSeconds - secondsLeftRef.current);
       await onFinishTest(graded, elapsed);
     } catch (err) {
       submittedRef.current = false;
@@ -99,7 +102,7 @@ export function TestRunner({
         err instanceof Error ? err.message : "Natijani saqlashda xatolik yuz berdi.",
       );
     }
-  }, [shuffledQuestions, onFinishTest]);
+  }, [shuffledQuestions, onFinishTest, totalDurationSeconds]);
 
   // Enforce fullscreen anti-cheat lock: exiting fullscreen locks test immediately
   useEffect(() => {
@@ -129,7 +132,7 @@ export function TestRunner({
     };
   }, [onTriggerCheaterLock]);
 
-  // 10-minute countdown timer
+  // Configurable countdown timer (15 minutes default)
   useEffect(() => {
     const interval = window.setInterval(() => {
       setSecondsLeft((prev) => {

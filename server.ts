@@ -12,7 +12,7 @@ async function startServer() {
 
   const store = new AppStore(DB_PATH);
 
-  // Student entry & strict account lock
+  // Student entry (creates new account or resumes existing profile)
   app.post('/api/student/enter', (req, res) => {
     const { fullName, className } = req.body ?? {};
     const existingToken = req.header('x-student-token') ?? undefined;
@@ -23,8 +23,7 @@ async function startServer() {
 
     const result = store.enterStudent(fullName, className, existingToken);
     if (!result.ok) {
-      const status = result.code === 'ACCOUNT_LOCKED' ? 403 : 400;
-      res.status(status).json({ error: result.error, code: result.code });
+      res.status(400).json({ error: result.error, code: result.code });
       return;
     }
 
@@ -33,6 +32,13 @@ async function startServer() {
       profile: result.profile,
       token: result.token,
     });
+  });
+
+  // Lookup whether student has entered previously
+  app.get('/api/student/lookup', (req, res) => {
+    const fullName = typeof req.query.fullName === 'string' ? req.query.fullName : '';
+    const className = typeof req.query.className === 'string' ? req.query.className : undefined;
+    res.json(store.lookupStudent(fullName, className));
   });
 
   // Fetch own profile
@@ -169,6 +175,24 @@ async function startServer() {
     }
 
     res.json({ ok: true });
+  });
+
+  // Get active test timer duration (default 15 minutes)
+  app.get('/api/settings/timer', (_req, res) => {
+    res.json({ testDurationMinutes: store.getTestDurationMinutes() });
+  });
+
+  // Teacher update test timer duration
+  app.post('/api/teacher/test-timer', (req, res) => {
+    const token = req.header('x-teacher-token') ?? undefined;
+    const { minutes } = req.body ?? {};
+    const result = store.setTestDurationMinutes(token, minutes);
+    if (!result.ok) {
+      const status = result.error.includes('sessiyasi') ? 401 : 400;
+      res.status(status).json({ error: result.error });
+      return;
+    }
+    res.json({ ok: true, testDurationMinutes: result.testDurationMinutes });
   });
 
   // Teacher can delete/reset a locked student account if needed

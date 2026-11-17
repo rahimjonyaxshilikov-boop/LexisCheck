@@ -9,9 +9,11 @@ import type {
 import {
   buildStudentKey,
   calculateStudentAggregates,
+  DEFAULT_TEST_DURATION_MINUTES,
   isValidSchoolClass,
   normalizeStudentName,
   TOTAL_UNITS,
+  validateTestDurationMinutes,
 } from '../utils/quizEngine';
 
 const DEFAULT_TEACHER_PASSWORD = 'Jalolova@2026';
@@ -31,6 +33,7 @@ export interface StoredStudent {
 export interface PersistedDatabase {
   teacherPasswordHash: string;
   cheaterCodeHash?: string;
+  testDurationMinutes?: number;
   teacherTokens: string[];
   students: StoredStudent[];
 }
@@ -118,12 +121,16 @@ export class AppStore {
           typeof parsed.teacherPasswordHash === 'string' &&
           Array.isArray(parsed.students)
         ) {
+          const validatedTimer = validateTestDurationMinutes(parsed.testDurationMinutes);
           return {
             teacherPasswordHash: parsed.teacherPasswordHash,
             cheaterCodeHash:
               typeof parsed.cheaterCodeHash === 'string' && parsed.cheaterCodeHash.includes(':')
                 ? parsed.cheaterCodeHash
                 : hashPassword(DEFAULT_CHEATER_CODE),
+            testDurationMinutes: validatedTimer.ok
+              ? validatedTimer.minutes
+              : DEFAULT_TEST_DURATION_MINUTES,
             teacherTokens: Array.isArray(parsed.teacherTokens)
               ? parsed.teacherTokens
               : [],
@@ -138,6 +145,7 @@ export class AppStore {
     const initial: PersistedDatabase = {
       teacherPasswordHash: hashPassword(DEFAULT_TEACHER_PASSWORD),
       cheaterCodeHash: hashPassword(DEFAULT_CHEATER_CODE),
+      testDurationMinutes: DEFAULT_TEST_DURATION_MINUTES,
       teacherTokens: [],
       students: [],
     };
@@ -162,10 +170,10 @@ export class AppStore {
   enterStudent(
     rawName: string,
     rawClass: string,
-    existingToken?: string,
+    _existingToken?: string,
   ):
     | { ok: true; status: 'created' | 'resumed'; profile: StudentProfile; token: string }
-    | { ok: false; code: 'INVALID_INPUT' | 'ACCOUNT_LOCKED'; error: string } {
+    | { ok: false; code: 'INVALID_INPUT'; error: string } {
     const fullName = normalizeStudentName(rawName);
     const className = rawClass.trim();
 
@@ -189,19 +197,11 @@ export class AppStore {
     const existing = this.db.students.find((s) => s.normalizedKey === normalizedKey);
 
     if (existing) {
-      if (existingToken && safeTokenMatch(existingToken, existing.secretToken)) {
-        return {
-          ok: true,
-          status: 'resumed',
-          profile: toStudentProfile(existing),
-          token: existing.secretToken,
-        };
-      }
       return {
-        ok: false,
-        code: 'ACCOUNT_LOCKED',
-        error:
-          "Ushbu ism-familiya va sinf bilan akkaunt allaqachon ro'yxatdan o'tgan. Boshqa shaxs avval kirgan akkauntga kira olmaydi va uning test natijalarini ko'ra olmaydi.",
+        ok: true,
+        status: 'resumed',
+        profile: toStudentProfile(existing),
+        token: existing.secretToken,
       };
     }
 
@@ -224,6 +224,55 @@ export class AppStore {
       status: 'created',
       profile: toStudentProfile(newStudent),
       token: newStudent.secretToken,
+    };
+  }
+
+  lookupStudent(
+    rawName: string,
+    rawClass?: string,
+  ):
+    | {
+        found: true;
+        exactClassMatch: boolean;
+        fullName: string;
+        className: string;
+        totalPoints: number;
+        completedUnitsCount: number;
+        attemptsCount: number;
+      }
+    | { found: false } {
+    const fullName = normalizeStudentName(rawName);
+    if (fullName.length < 3 || !fullName.includes(' ')) {
+      return { found: false };
+    }
+    const targetLower = fullName.toLowerCase();
+    const trimmedClass = rawClass?.trim();
+
+    let match: StoredStudent | undefined;
+    let exactClassMatch = false;
+
+    if (trimmedClass && isValidSchoolClass(trimmedClass)) {
+      const exactKey = buildStudentKey(fullName, trimmedClass);
+      match = this.db.students.find((s) => s.normalizedKey === exactKey);
+      if (match) exactClassMatch = true;
+    }
+
+    if (!match) {
+      match = this.db.students.find(
+        (s) => normalizeStudentName(s.fullName).toLowerCase() === targetLower,
+      );
+    }
+
+    if (!match) return { found: false };
+    const profile = toStudentProfile(match);
+    return {
+      found: true,
+      exactClassMatch,
+      fullName: profile.fullName,
+      className: profile.className,
+      totalPoints: profile.totalPoints,
+      completedUnitsCount: profile.completedUnits.length,
+      attemptsCount: profile.attempts.length,
     };
   }
 
@@ -389,6 +438,27 @@ export class AppStore {
     this.db.cheaterCodeHash = hashPassword(newTrimmed);
     this.persist();
     return { ok: true };
+  }
+
+  getTestDurationMinutes(): number {
+    const validated = validateTestDurationMinutes(this.db.testDurationMinutes);
+    return validated.ok ? validated.minutes : DEFAULT_TEST_DURATION_MINUTES;
+  }
+
+  setTestDurationMinutes(
+    token: string | undefined,
+    minutes: unknown,
+  ): { ok: true; testDurationMinutes: number } | { ok: false; error: string } {
+    if (!this.isValidTeacherToken(token)) {
+      return { ok: false, error: "O'qituvchi sessiyasi yaroqsiz. Qaytadan kiring." };
+    }
+    const validated = validateTestDurationMinutes(minutes);
+    if (!validated.ok) {
+      return { ok: false, error: validated.error };
+    }
+    this.db.testDurationMinutes = validated.minutes;
+    this.persist();
+    return { ok: true, testDurationMinutes: validated.minutes };
   }
 
   getTeacherDashboard(token: string | undefined):

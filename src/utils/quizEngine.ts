@@ -6,8 +6,30 @@ import type {
 } from '../types/quiz';
 
 export const TOTAL_UNITS = 101;
-export const TEST_DURATION_SECONDS = 10 * 60; // 10 minutes per unit test
+export const DEFAULT_TEST_DURATION_MINUTES = 15;
+export const MIN_TEST_DURATION_MINUTES = 1;
+export const MAX_TEST_DURATION_MINUTES = 120;
+export const TEST_DURATION_SECONDS = DEFAULT_TEST_DURATION_MINUTES * 60; // 15 minutes default per unit test
 export const POINTS_PER_CORRECT = 10;
+
+export function validateTestDurationMinutes(
+  value: unknown,
+): { ok: true; minutes: number } | { ok: false; error: string } {
+  const num = typeof value === 'string' && value.trim() !== '' ? Number(value) : Number(value);
+  if (!Number.isFinite(num) || !Number.isInteger(num)) {
+    return {
+      ok: false,
+      error: "Taymer qiymati butun son (daqiqa) bo'lishi kerak.",
+    };
+  }
+  if (num < MIN_TEST_DURATION_MINUTES || num > MAX_TEST_DURATION_MINUTES) {
+    return {
+      ok: false,
+      error: `Taymer davomiyligi ${MIN_TEST_DURATION_MINUTES} dan ${MAX_TEST_DURATION_MINUTES} daqiqagacha bo'lishi kerak.`,
+    };
+  }
+  return { ok: true, minutes: num };
+}
 
 export const SCHOOL_GRADES = [5, 6, 7, 8, 9, 10] as const;
 export const SCHOOL_SECTIONS = ['01', '02', '03'] as const;
@@ -176,4 +198,54 @@ export function calculateStudentAggregates(attempts: readonly TestAttempt[]): {
   const averagePercentage = Math.round(percentageSum / attempts.length);
 
   return { totalPoints, completedUnits, averagePercentage };
+}
+
+export interface MasteryRankInfo {
+  title: string;
+  level: number;
+  nextTitle: string | null;
+  nextThresholdPoints: number | null;
+  progressPercent: number;
+}
+
+const MASTERY_TIERS: readonly { minPoints: number; title: string }[] = [
+  { minPoints: 0, title: 'Boshlovchi' },
+  { minPoints: 500, title: 'Faol oʻquvchi' },
+  { minPoints: 2000, title: 'Bilimdon' },
+  { minPoints: 6000, title: 'Ekspert' },
+  { minPoints: 15000, title: 'Master Lexicon' },
+];
+
+export function getStudentMasteryRank(totalPoints: number): MasteryRankInfo {
+  const safePoints = Math.max(0, totalPoints);
+  let tierIdx = 0;
+  for (let i = 0; i < MASTERY_TIERS.length; i++) {
+    if (safePoints >= MASTERY_TIERS[i].minPoints) {
+      tierIdx = i;
+    }
+  }
+  const current = MASTERY_TIERS[tierIdx];
+  const next = MASTERY_TIERS[tierIdx + 1] ?? null;
+
+  if (!next) {
+    return {
+      title: current.title,
+      level: tierIdx + 1,
+      nextTitle: null,
+      nextThresholdPoints: null,
+      progressPercent: 100,
+    };
+  }
+
+  const span = next.minPoints - current.minPoints;
+  const gained = safePoints - current.minPoints;
+  const progressPercent = Math.min(100, Math.max(0, Math.round((gained / span) * 100)));
+
+  return {
+    title: current.title,
+    level: tierIdx + 1,
+    nextTitle: next.title,
+    nextThresholdPoints: next.minPoints,
+    progressPercent,
+  };
 }

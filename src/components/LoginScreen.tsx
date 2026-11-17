@@ -1,20 +1,79 @@
-import { useState, type FormEvent } from 'react';
-import { ArrowRight, BookOpen, Lock, ShieldCheck } from 'lucide-react';
-import { SCHOOL_GRADES, SCHOOL_SECTIONS, TOTAL_UNITS } from '../utils/quizEngine';
+import { useEffect, useState, type FormEvent } from 'react';
+import { ArrowRight, BookOpen, Lock, UserCheck } from 'lucide-react';
+import {
+  lookupStudentProfile,
+  type StudentLookupResult,
+} from '../utils/api';
+import {
+  DEFAULT_TEST_DURATION_MINUTES,
+  formatCountdown,
+  SCHOOL_GRADES,
+  SCHOOL_SECTIONS,
+  TOTAL_UNITS,
+} from '../utils/quizEngine';
 
 interface LoginScreenProps {
+  testDurationMinutes?: number;
   onSuccessEnter: (fullName: string, className: string) => Promise<void>;
   onOpenTeacher: () => void;
 }
 
-export function LoginScreen({ onSuccessEnter, onOpenTeacher }: LoginScreenProps) {
+export function LoginScreen({
+  testDurationMinutes = DEFAULT_TEST_DURATION_MINUTES,
+  onSuccessEnter,
+  onOpenTeacher,
+}: LoginScreenProps) {
   const [fullName, setFullName] = useState('');
   const [selectedGrade, setSelectedGrade] = useState<number>(8);
   const [selectedSection, setSelectedSection] = useState<string>('03');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [lookupMatch, setLookupMatch] = useState<StudentLookupResult | null>(null);
 
   const selectedClass = `${selectedGrade}-${selectedSection}`;
+
+  // Detect returning student while typing full name
+  useEffect(() => {
+    const trimmed = fullName.trim().replace(/\s+/g, ' ');
+    if (trimmed.length < 3 || !trimmed.includes(' ')) {
+      setLookupMatch(null);
+      return;
+    }
+
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      const result = await lookupStudentProfile(trimmed, selectedClass);
+      if (!cancelled) {
+        setLookupMatch(result);
+      }
+    }, 180);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [fullName, selectedClass]);
+
+  async function handleQuickResumeMatchedClass(
+    matchedName: string,
+    matchedClass: string,
+  ) {
+    const [gradeStr, secStr] = matchedClass.split('-');
+    const gradeNum = Number(gradeStr);
+    if (Number.isInteger(gradeNum) && secStr) {
+      setSelectedGrade(gradeNum);
+      setSelectedSection(secStr);
+    }
+    setError(null);
+    setSubmitting(true);
+    try {
+      await onSuccessEnter(matchedName, matchedClass);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Kirishda xatolik yuz berdi.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -56,7 +115,7 @@ export function LoginScreen({ onSuccessEnter, onOpenTeacher }: LoginScreenProps)
             </h1>
 
             <p className="text-base leading-relaxed text-slate-600 dark:text-slate-300">
-              Har bir unit boʻyicha kamida 30 ta takrorlanmas test savoli, 10 daqiqalik taymer va
+              Har bir unit boʻyicha kamida 30 ta takrorlanmas test savoli, {testDurationMinutes} daqiqalik taymer va
               umumiy ballar tizimi. Savollar har bir oʻquvchiga turlicha tartibda tushadi.
             </p>
           </div>
@@ -80,7 +139,7 @@ export function LoginScreen({ onSuccessEnter, onOpenTeacher }: LoginScreenProps)
             </div>
             <div>
               <div className="font-mono-tabular text-2xl font-semibold text-slate-900 dark:text-slate-100">
-                10:00
+                {formatCountdown(testDurationMinutes * 60)}
               </div>
               <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                 Vaqt chegarasi
@@ -181,6 +240,46 @@ export function LoginScreen({ onSuccessEnter, onOpenTeacher }: LoginScreenProps)
                 </div>
               </div>
 
+              {lookupMatch?.found && (
+                <div
+                  data-testid="returning-student-banner"
+                  role="status"
+                  className="rounded-xl border border-emerald-200 bg-emerald-50/80 p-3.5 text-sm text-emerald-950 dark:border-emerald-900/60 dark:bg-emerald-950/35 dark:text-emerald-200"
+                >
+                  <div className="flex items-start gap-2.5">
+                    <UserCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700 dark:text-emerald-400" />
+                    <div className="min-w-0 flex-1">
+                      <div className="font-semibold">
+                        Siz avval ham kirgan ekansiz, profilga kiramiz!
+                      </div>
+                      <div className="mt-0.5 text-xs text-emerald-800 dark:text-emerald-300">
+                        {lookupMatch.fullName} · {lookupMatch.className} sinf ·{' '}
+                        <span className="font-mono-tabular font-semibold">
+                          {lookupMatch.totalPoints} ball
+                        </span>{' '}
+                        ({lookupMatch.completedUnitsCount} ta unit)
+                      </div>
+                      {!lookupMatch.exactClassMatch && (
+                        <button
+                          type="button"
+                          disabled={submitting}
+                          onClick={() =>
+                            void handleQuickResumeMatchedClass(
+                              lookupMatch.fullName,
+                              lookupMatch.className,
+                            )
+                          }
+                          className="mt-2 inline-flex min-h-[34px] items-center gap-1.5 rounded-lg bg-emerald-700 px-3 text-xs font-semibold text-white transition-colors hover:bg-emerald-800 dark:bg-emerald-500 dark:text-slate-950 dark:hover:bg-emerald-400"
+                        >
+                          <span>{lookupMatch.className} sinfidagi profilga kirish</span>
+                          <ArrowRight className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {error && (
                 <div
                   role="alert"
@@ -196,7 +295,13 @@ export function LoginScreen({ onSuccessEnter, onOpenTeacher }: LoginScreenProps)
                 disabled={submitting}
                 className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-sky-600 px-5 py-3 text-base font-semibold text-white transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-sky-500 dark:text-slate-950 dark:hover:bg-sky-400"
               >
-                <span>{submitting ? 'Tekshirilmoqda...' : 'Davom etish (Continue)'}</span>
+                <span>
+                  {submitting
+                    ? 'Tekshirilmoqda...'
+                    : lookupMatch?.found && lookupMatch.exactClassMatch
+                      ? 'Profilga kirish'
+                      : 'Davom etish (Continue)'}
+                </span>
                 <ArrowRight className="h-4 w-4" />
               </button>
             </form>
@@ -204,8 +309,8 @@ export function LoginScreen({ onSuccessEnter, onOpenTeacher }: LoginScreenProps)
 
           <div className="mt-6 flex items-center justify-between border-t border-slate-200 pt-4 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
             <span className="flex items-center gap-1.5">
-              <ShieldCheck className="h-4 w-4 text-slate-400" />
-              <span>Akkauntlar himoyalangan</span>
+              <UserCheck className="h-4 w-4 text-slate-400" />
+              <span>Har bir oʻquvchi profili saqlanadi</span>
             </span>
             <button
               type="button"

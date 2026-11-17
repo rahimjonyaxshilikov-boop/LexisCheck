@@ -4,10 +4,14 @@ import { getUnitByNumber } from './data/units';
 import {
   enterStudentAccount,
   fetchOwnStudentProfile,
+  fetchTestDurationMinutes,
   setSavedStudentToken,
   submitTestAttempt,
 } from './utils/api';
-import type { GradeQuizResult } from './utils/quizEngine';
+import {
+  DEFAULT_TEST_DURATION_MINUTES,
+  type GradeQuizResult,
+} from './utils/quizEngine';
 import {
   exitAppFullscreen,
   isCheaterLockedInStorage,
@@ -42,6 +46,10 @@ export default function App() {
   const [bootstrapping, setBootstrapping] = useState(true);
   const [activeUnit, setActiveUnit] = useState<UnitData | null>(null);
   const [activeAttempt, setActiveAttempt] = useState<TestAttempt | null>(null);
+  const [testDurationMinutes, setTestDurationMinutes] = useState<number>(
+    DEFAULT_TEST_DURATION_MINUTES,
+  );
+  const [welcomeBackNotice, setWelcomeBackNotice] = useState(false);
   const [cheaterLocked, setCheaterLocked] = useState<boolean>(() =>
     isCheaterLockedInStorage(),
   );
@@ -58,15 +66,21 @@ export default function App() {
     }
   }, [darkMode]);
 
-  // Restore active student session on reload if token exists
+  // Restore active student session & timer setting on reload
   useEffect(() => {
     let mounted = true;
     async function restore() {
       try {
-        const profile = await fetchOwnStudentProfile();
-        if (mounted && profile) {
-          setStudent(profile);
-          setView('units');
+        const [profile, configuredMinutes] = await Promise.all([
+          fetchOwnStudentProfile(),
+          fetchTestDurationMinutes(),
+        ]);
+        if (mounted) {
+          setTestDurationMinutes(configuredMinutes);
+          if (profile) {
+            setStudent(profile);
+            setView('units');
+          }
         }
       } finally {
         if (mounted) setBootstrapping(false);
@@ -81,7 +95,13 @@ export default function App() {
   async function handleStudentEnter(fullName: string, className: string) {
     const res = await enterStudentAccount(fullName, className);
     setStudent(res.profile);
-    setView('units');
+    if (res.status === 'resumed') {
+      setWelcomeBackNotice(true);
+      setView('profile');
+    } else {
+      setWelcomeBackNotice(false);
+      setView('units');
+    }
   }
 
   function handleStudentLogout() {
@@ -89,6 +109,7 @@ export default function App() {
     setStudent(null);
     setActiveUnit(null);
     setActiveAttempt(null);
+    setWelcomeBackNotice(false);
     setView('login');
   }
 
@@ -162,6 +183,7 @@ export default function App() {
     return (
       <TestRunner
         unit={activeUnit}
+        testDurationMinutes={testDurationMinutes}
         darkMode={darkMode}
         onToggleDarkMode={() => setDarkMode((d) => !d)}
         onFinishTest={handleFinishTest}
@@ -188,6 +210,7 @@ export default function App() {
 
       {view === 'login' && (
         <LoginScreen
+          testDurationMinutes={testDurationMinutes}
           onSuccessEnter={handleStudentEnter}
           onOpenTeacher={() => setView('teacher')}
         />
@@ -196,6 +219,7 @@ export default function App() {
       {view === 'units' && student && (
         <UnitsMenu
           student={student}
+          testDurationMinutes={testDurationMinutes}
           onStartUnit={handleStartUnit}
           onOpenProfile={() => setView('profile')}
         />
@@ -216,7 +240,12 @@ export default function App() {
       {view === 'profile' && student && (
         <StudentProfile
           student={student}
-          onBackToUnits={() => setView('units')}
+          welcomeBackNotice={welcomeBackNotice}
+          onDismissWelcomeBack={() => setWelcomeBackNotice(false)}
+          onBackToUnits={() => {
+            setWelcomeBackNotice(false);
+            setView('units');
+          }}
           onInspectAttempt={(attempt) => {
             setActiveAttempt(attempt);
             setView('results');
@@ -229,7 +258,11 @@ export default function App() {
       )}
 
       {view === 'teacher' && (
-        <TeacherPanel onBack={() => setView(student ? 'units' : 'login')} />
+        <TeacherPanel
+          testDurationMinutes={testDurationMinutes}
+          onTestDurationChange={setTestDurationMinutes}
+          onBack={() => setView(student ? 'units' : 'login')}
+        />
       )}
     </div>
   );

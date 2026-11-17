@@ -5,10 +5,13 @@ import {
   localEnterStudent,
   localFetchTeacherDashboard,
   localGetStudentByToken,
+  localGetTestDurationMinutes,
   localLoginTeacher,
+  localLookupStudent,
   localSubmitAttempt,
   localUpdateCheaterCode,
   localUpdateTeacherPassword,
+  localUpdateTestDurationMinutes,
   localVerifyCheaterCode,
   type StorageLike,
 } from './localFallbackStore';
@@ -21,19 +24,12 @@ function createMemoryStorage(): StorageLike {
   };
 }
 
-test('localFallbackStore supports student entry, lock, attempt save, and teacher auth', async () => {
+test('localFallbackStore supports student entry, returning resume, attempt save, and teacher auth', async () => {
   const storage = createMemoryStorage();
 
   const entered = localEnterStudent('Aziza Karimova', '8-03', null, storage);
   assert.equal(entered.status, 'created');
   assert.equal(entered.profile.fullName, 'Aziza Karimova');
-
-  assert.throws(() => {
-    localEnterStudent('Aziza Karimova', '8-03', null, storage);
-  }, /allaqachon ro'yxatdan o'tgan/);
-
-  const resumed = localEnterStudent('Aziza Karimova', '8-03', entered.token, storage);
-  assert.equal(resumed.status, 'resumed');
 
   const saved = localSubmitAttempt(
     entered.token,
@@ -53,6 +49,19 @@ test('localFallbackStore supports student entry, lock, attempt save, and teacher
   );
   assert.equal(saved.profile.totalPoints, 250);
   assert.equal(localGetStudentByToken(entered.token, storage)?.totalPoints, 250);
+
+  const lookup = localLookupStudent('  aziza  karimova ', '8-03', storage);
+  assert.equal(lookup.found, true);
+  if (lookup.found) {
+    assert.equal(lookup.totalPoints, 250);
+  }
+
+  // Re-entering without token resumes saved profile and preserves history
+  const resumed = localEnterStudent('aziza karimova', '8-03', null, storage);
+  assert.equal(resumed.status, 'resumed');
+  assert.equal(resumed.token, entered.token);
+  assert.equal(resumed.profile.totalPoints, 250);
+  assert.equal(resumed.profile.attempts.length, 1);
 
   const teacherToken = await localLoginTeacher('Jalolova@2026', storage);
   const dashboard = localFetchTeacherDashboard(teacherToken, storage);
@@ -80,6 +89,11 @@ test('localFallbackStore supports student entry, lock, attempt save, and teacher
   );
   assert.equal(await localVerifyCheaterCode('2026Al1209.9', storage), false);
   assert.equal(await localVerifyCheaterCode('LocalCheat2027', storage), true);
+
+  assert.equal(localGetTestDurationMinutes(storage), 15);
+  assert.throws(() => localUpdateTestDurationMinutes('bad-token', 20, storage));
+  assert.equal(localUpdateTestDurationMinutes(newToken, 25, storage), 25);
+  assert.equal(localGetTestDurationMinutes(storage), 25);
 
   localDeleteStudent(newToken, entered.profile.id, storage);
   assert.equal(localFetchTeacherDashboard(newToken, storage).length, 0);

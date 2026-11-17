@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import {
   CheckCircle2,
+  Clock,
   Download,
   Eye,
   KeyRound,
@@ -20,8 +21,16 @@ import {
   setSavedTeacherToken,
   updateCheaterCode,
   updateTeacherPassword,
+  updateTestDurationMinutes,
 } from '../utils/api';
-import { formatCountdown, getAllSchoolClasses } from '../utils/quizEngine';
+import {
+  DEFAULT_TEST_DURATION_MINUTES,
+  formatCountdown,
+  getAllSchoolClasses,
+  MAX_TEST_DURATION_MINUTES,
+  MIN_TEST_DURATION_MINUTES,
+  validateTestDurationMinutes,
+} from '../utils/quizEngine';
 import { ALL_UNITS } from '../data/units';
 import {
   analyzeClassAndMistakes,
@@ -29,11 +38,19 @@ import {
 } from '../utils/studentAnalytics';
 import { ProgressLineChart, TrendBadge } from './AnalyticsPrimitives';
 
+const TIMER_PRESET_MINUTES = [5, 10, 15, 20, 30, 45] as const;
+
 interface TeacherPanelProps {
+  testDurationMinutes?: number;
+  onTestDurationChange?: (minutes: number) => void;
   onBack: () => void;
 }
 
-export function TeacherPanel({ onBack }: TeacherPanelProps) {
+export function TeacherPanel({
+  testDurationMinutes = DEFAULT_TEST_DURATION_MINUTES,
+  onTestDurationChange,
+  onBack,
+}: TeacherPanelProps) {
   const [teacherToken, setTeacherToken] = useState<string | null>(() =>
     getSavedTeacherToken(),
   );
@@ -66,6 +83,13 @@ export function TeacherPanel({ onBack }: TeacherPanelProps) {
   const [pwError, setPwError] = useState<string | null>(null);
   const [pwSuccess, setPwSuccess] = useState<string | null>(null);
   const [pwSubmitting, setPwSubmitting] = useState(false);
+
+  // Test timer configuration modal state
+  const [showTimerModal, setShowTimerModal] = useState(false);
+  const [timerInput, setTimerInput] = useState<string>(String(testDurationMinutes));
+  const [timerError, setTimerError] = useState<string | null>(null);
+  const [timerSuccess, setTimerSuccess] = useState<string | null>(null);
+  const [timerSubmitting, setTimerSubmitting] = useState(false);
 
   const allClasses = useMemo(() => getAllSchoolClasses(), []);
 
@@ -161,6 +185,39 @@ export function TeacherPanel({ onBack }: TeacherPanelProps) {
     setPwError(null);
     setPwSuccess(null);
     setShowPasswordModal(true);
+  }
+
+  function openTimerModal() {
+    setTimerInput(String(testDurationMinutes));
+    setTimerError(null);
+    setTimerSuccess(null);
+    setShowTimerModal(true);
+  }
+
+  async function handleSaveTimer(e: FormEvent) {
+    e.preventDefault();
+    setTimerError(null);
+    setTimerSuccess(null);
+
+    const validated = validateTestDurationMinutes(timerInput);
+    if (!validated.ok) {
+      setTimerError(validated.error);
+      return;
+    }
+
+    setTimerSubmitting(true);
+    try {
+      const updated = await updateTestDurationMinutes(validated.minutes);
+      onTestDurationChange?.(updated);
+      setTimerInput(String(updated));
+      setTimerSuccess(`Test taymeri ${updated} daqiqaga yangilandi.`);
+    } catch (err) {
+      setTimerError(
+        err instanceof Error ? err.message : "Taymer vaqtini yangilab bo'lmadi.",
+      );
+    } finally {
+      setTimerSubmitting(false);
+    }
   }
 
   async function handleDeleteStudent(studentId: string) {
@@ -324,6 +381,15 @@ export function TeacherPanel({ onBack }: TeacherPanelProps) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            type="button"
+            onClick={openTimerModal}
+            className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+          >
+            <Clock className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
+            <span>Taymer: {testDurationMinutes} daq</span>
+          </button>
+
           <button
             type="button"
             onClick={() => openSecurityModal('teacher')}
@@ -1127,6 +1193,130 @@ export function TeacherPanel({ onBack }: TeacherPanelProps) {
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Test Timer Configuration Modal */}
+      {showTimerModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-xs"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="timer-modal-title"
+        >
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex items-center justify-between">
+              <h2
+                id="timer-modal-title"
+                className="text-lg font-bold text-slate-900 dark:text-slate-100"
+              >
+                Test taymerini sozlash
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowTimerModal(false)}
+                aria-label="Taymer oynasini yopish"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <p className="mt-1.5 text-xs text-slate-600 dark:text-slate-400">
+              Har bir unit testi uchun ajratiladigan vaqtni belgilang (standart: {DEFAULT_TEST_DURATION_MINUTES} daqiqa).
+            </p>
+
+            <form onSubmit={handleSaveTimer} className="mt-5 space-y-4" noValidate>
+              <div>
+                <span className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
+                  Tezkor tanlash
+                </span>
+                <div className="mt-2 grid grid-cols-3 gap-2">
+                  {TIMER_PRESET_MINUTES.map((mins) => {
+                    const selected = Number(timerInput) === mins;
+                    return (
+                      <button
+                        key={mins}
+                        type="button"
+                        onClick={() => {
+                          setTimerInput(String(mins));
+                          setTimerError(null);
+                          setTimerSuccess(null);
+                        }}
+                        className={`min-h-[38px] rounded-xl border px-3 text-xs font-semibold tabular-nums transition-colors ${
+                          selected
+                            ? 'border-sky-600 bg-sky-600 text-white dark:border-sky-500 dark:bg-sky-500 dark:text-slate-950'
+                            : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        {mins} daq{mins === DEFAULT_TEST_DURATION_MINUTES ? ' · Standart' : ''}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="teacher-timer-minutes"
+                  className="block text-sm font-semibold text-slate-800 dark:text-slate-200"
+                >
+                  Test davomiyligi (daqiqa, {MIN_TEST_DURATION_MINUTES}–{MAX_TEST_DURATION_MINUTES})
+                </label>
+                <input
+                  id="teacher-timer-minutes"
+                  type="number"
+                  min={MIN_TEST_DURATION_MINUTES}
+                  max={MAX_TEST_DURATION_MINUTES}
+                  step={1}
+                  required
+                  value={timerInput}
+                  onChange={(e) => {
+                    setTimerInput(e.target.value);
+                    if (timerError) setTimerError(null);
+                    if (timerSuccess) setTimerSuccess(null);
+                  }}
+                  className="mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 font-mono-tabular text-sm text-slate-900 focus:border-sky-600 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                />
+              </div>
+
+              {timerError && (
+                <div
+                  role="alert"
+                  className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300"
+                >
+                  {timerError}
+                </div>
+              )}
+
+              {timerSuccess && (
+                <div
+                  role="status"
+                  className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300"
+                >
+                  <CheckCircle2 className="h-4 w-4 shrink-0" />
+                  <span>{timerSuccess}</span>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowTimerModal(false)}
+                  className="min-h-[40px] rounded-xl border border-slate-200 px-4 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                >
+                  Yopish
+                </button>
+                <button
+                  type="submit"
+                  disabled={timerSubmitting}
+                  className="min-h-[40px] rounded-xl bg-sky-600 px-5 text-xs font-semibold text-white hover:bg-sky-700 disabled:opacity-60 dark:bg-sky-500 dark:text-slate-950"
+                >
+                  {timerSubmitting ? 'Saqlanmoqda...' : 'Taymerni saqlash'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

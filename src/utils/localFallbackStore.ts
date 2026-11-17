@@ -6,8 +6,10 @@ import type {
 import {
   buildStudentKey,
   calculateStudentAggregates,
+  DEFAULT_TEST_DURATION_MINUTES,
   isValidSchoolClass,
   normalizeStudentName,
+  validateTestDurationMinutes,
 } from './quizEngine';
 
 const LOCAL_DB_KEY = 'lexischeck_local_db_v1';
@@ -30,6 +32,7 @@ interface StoredLocalStudent {
 interface LocalDatabase {
   teacherPasswordHash: string;
   cheaterCodeHash?: string;
+  testDurationMinutes?: number;
   teacherTokens: string[];
   students: StoredLocalStudent[];
 }
@@ -100,12 +103,16 @@ function loadDb(storage: StorageLike): LocalDatabase {
         typeof parsed.teacherPasswordHash === 'string' &&
         Array.isArray(parsed.students)
       ) {
+        const validatedTimer = validateTestDurationMinutes(parsed.testDurationMinutes);
         return {
           teacherPasswordHash: parsed.teacherPasswordHash,
           cheaterCodeHash:
             typeof parsed.cheaterCodeHash === 'string' && parsed.cheaterCodeHash.includes(':')
               ? parsed.cheaterCodeHash
               : DEFAULT_CHEATER_CODE_HASH,
+          testDurationMinutes: validatedTimer.ok
+            ? validatedTimer.minutes
+            : DEFAULT_TEST_DURATION_MINUTES,
           teacherTokens: Array.isArray(parsed.teacherTokens)
             ? parsed.teacherTokens
             : [],
@@ -119,6 +126,7 @@ function loadDb(storage: StorageLike): LocalDatabase {
   const initial: LocalDatabase = {
     teacherPasswordHash: DEFAULT_TEACHER_HASH,
     cheaterCodeHash: DEFAULT_CHEATER_CODE_HASH,
+    testDurationMinutes: DEFAULT_TEST_DURATION_MINUTES,
     teacherTokens: [],
     students: [],
   };
@@ -156,7 +164,7 @@ function toProfile(student: StoredLocalStudent): StudentProfile {
 export function localEnterStudent(
   rawName: string,
   rawClass: string,
-  existingToken?: string | null,
+  _existingToken?: string | null,
   customStorage?: StorageLike,
 ): { status: 'created' | 'resumed'; profile: StudentProfile; token: string } {
   const storage = getStorage(customStorage);
@@ -174,16 +182,11 @@ export function localEnterStudent(
   const normalizedKey = buildStudentKey(fullName, className);
   const existing = db.students.find((s) => s.normalizedKey === normalizedKey);
   if (existing) {
-    if (existingToken && existingToken === existing.secretToken) {
-      return {
-        status: 'resumed',
-        profile: toProfile(existing),
-        token: existing.secretToken,
-      };
-    }
-    throw new Error(
-      "Ushbu ism-familiya va sinf bilan akkaunt allaqachon ro'yxatdan o'tgan. Boshqa shaxs avval kirgan akkauntga kira olmaydi va uning test natijalarini ko'ra olmaydi.",
-    );
+    return {
+      status: 'resumed',
+      profile: toProfile(existing),
+      token: existing.secretToken,
+    };
   }
 
   const created: StoredLocalStudent = {
@@ -202,6 +205,58 @@ export function localEnterStudent(
     status: 'created',
     profile: toProfile(created),
     token: created.secretToken,
+  };
+}
+
+export function localLookupStudent(
+  rawName: string,
+  rawClass?: string,
+  customStorage?: StorageLike,
+):
+  | {
+      found: true;
+      exactClassMatch: boolean;
+      fullName: string;
+      className: string;
+      totalPoints: number;
+      completedUnitsCount: number;
+      attemptsCount: number;
+    }
+  | { found: false } {
+  const fullName = normalizeStudentName(rawName);
+  if (fullName.length < 3 || !fullName.includes(' ')) {
+    return { found: false };
+  }
+  const storage = getStorage(customStorage);
+  const db = loadDb(storage);
+  const targetLower = fullName.toLowerCase();
+  const trimmedClass = rawClass?.trim();
+
+  let match: StoredLocalStudent | undefined;
+  let exactClassMatch = false;
+
+  if (trimmedClass && isValidSchoolClass(trimmedClass)) {
+    const exactKey = buildStudentKey(fullName, trimmedClass);
+    match = db.students.find((s) => s.normalizedKey === exactKey);
+    if (match) exactClassMatch = true;
+  }
+
+  if (!match) {
+    match = db.students.find(
+      (s) => normalizeStudentName(s.fullName).toLowerCase() === targetLower,
+    );
+  }
+
+  if (!match) return { found: false };
+  const profile = toProfile(match);
+  return {
+    found: true,
+    exactClassMatch,
+    fullName: profile.fullName,
+    className: profile.className,
+    totalPoints: profile.totalPoints,
+    completedUnitsCount: profile.completedUnits.length,
+    attemptsCount: profile.attempts.length,
   };
 }
 
@@ -380,4 +435,30 @@ export function localDeleteStudent(
   }
   db.students.splice(idx, 1);
   saveDb(storage, db);
+}
+
+export function localGetTestDurationMinutes(customStorage?: StorageLike): number {
+  const storage = getStorage(customStorage);
+  const db = loadDb(storage);
+  const validated = validateTestDurationMinutes(db.testDurationMinutes);
+  return validated.ok ? validated.minutes : DEFAULT_TEST_DURATION_MINUTES;
+}
+
+export function localUpdateTestDurationMinutes(
+  token: string,
+  minutes: unknown,
+  customStorage?: StorageLike,
+): number {
+  const storage = getStorage(customStorage);
+  const db = loadDb(storage);
+  if (!db.teacherTokens.includes(token)) {
+    throw new Error("O'qituvchi sessiyasi yaroqsiz. Qaytadan kiring.");
+  }
+  const validated = validateTestDurationMinutes(minutes);
+  if (!validated.ok) {
+    throw new Error(validated.error);
+  }
+  db.testDurationMinutes = validated.minutes;
+  saveDb(storage, db);
+  return validated.minutes;
 }

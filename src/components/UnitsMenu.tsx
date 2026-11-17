@@ -2,9 +2,11 @@ import { useMemo, useState } from 'react';
 import { CheckCircle2, Play, RotateCcw, Search } from 'lucide-react';
 import type { StudentProfile, UnitData } from '../types/quiz';
 import { ALL_UNITS } from '../data/units';
+import { DEFAULT_TEST_DURATION_MINUTES } from '../utils/quizEngine';
 
 interface UnitsMenuProps {
   student: StudentProfile;
+  testDurationMinutes?: number;
   onStartUnit: (unit: UnitData) => void;
   onOpenProfile: () => void;
 }
@@ -24,6 +26,7 @@ const UNIT_RANGES: readonly { id: UnitRangeId; label: string; min?: number; max?
 
 export function UnitsMenu({
   student,
+  testDurationMinutes = DEFAULT_TEST_DURATION_MINUTES,
   onStartUnit,
   onOpenProfile,
 }: UnitsMenuProps) {
@@ -327,7 +330,7 @@ export function UnitsMenu({
                     <div className="flex items-center gap-1.5 tabular-nums">
                       <span>{unit.questions.length} savol</span>
                       <span aria-hidden="true">·</span>
-                      <span>10 daq</span>
+                      <span>{testDurationMinutes} daq</span>
                     </div>
                   </div>
 

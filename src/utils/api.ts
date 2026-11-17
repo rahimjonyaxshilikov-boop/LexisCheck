@@ -9,12 +9,16 @@ import {
   localEnterStudent,
   localFetchTeacherDashboard,
   localGetStudentByToken,
+  localGetTestDurationMinutes,
   localLoginTeacher,
+  localLookupStudent,
   localSubmitAttempt,
   localUpdateCheaterCode,
   localUpdateTeacherPassword,
+  localUpdateTestDurationMinutes,
   localVerifyCheaterCode,
 } from './localFallbackStore';
+import { DEFAULT_TEST_DURATION_MINUTES } from './quizEngine';
 
 const STUDENT_TOKEN_KEY = 'lexischeck_student_token';
 const TEACHER_TOKEN_KEY = 'lexischeck_teacher_token';
@@ -110,6 +114,38 @@ export async function enterStudentAccount(
       return result;
     }
     throw err;
+  }
+}
+
+export type StudentLookupResult =
+  | {
+      found: true;
+      exactClassMatch: boolean;
+      fullName: string;
+      className: string;
+      totalPoints: number;
+      completedUnitsCount: number;
+      attemptsCount: number;
+    }
+  | { found: false };
+
+export async function lookupStudentProfile(
+  fullName: string,
+  className?: string,
+): Promise<StudentLookupResult> {
+  const params = new URLSearchParams({ fullName });
+  if (className) params.set('className', className);
+  try {
+    const { ok, data } = await fetchBackendJson(`/api/student/lookup?${params.toString()}`);
+    if (ok && data && typeof data.found === 'boolean') {
+      return data as unknown as StudentLookupResult;
+    }
+    return { found: false };
+  } catch (err) {
+    if (err instanceof BackendUnavailableError) {
+      return localLookupStudent(fullName, className);
+    }
+    return { found: false };
   }
 }
 
@@ -337,6 +373,49 @@ export async function updateCheaterCode(
     if (err instanceof BackendUnavailableError) {
       await localUpdateCheaterCode(token, oldCode, newCode, confirmCode);
       return;
+    }
+    throw err;
+  }
+}
+
+export async function fetchTestDurationMinutes(): Promise<number> {
+  try {
+    const { ok, data } = await fetchBackendJson('/api/settings/timer');
+    if (ok && typeof data.testDurationMinutes === 'number') {
+      return data.testDurationMinutes;
+    }
+    return DEFAULT_TEST_DURATION_MINUTES;
+  } catch (err) {
+    if (err instanceof BackendUnavailableError) {
+      return localGetTestDurationMinutes();
+    }
+    return DEFAULT_TEST_DURATION_MINUTES;
+  }
+}
+
+export async function updateTestDurationMinutes(minutes: number): Promise<number> {
+  const token = getSavedTeacherToken();
+  if (!token) {
+    throw new Error("O'qituvchi sessiyasi topilmadi.");
+  }
+  try {
+    const { ok, data } = await fetchBackendJson('/api/teacher/test-timer', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-teacher-token': token,
+      },
+      body: JSON.stringify({ minutes }),
+    });
+    if (!ok) {
+      throw new Error((data.error as string) || "Taymer vaqtini yangilab bo'lmadi.");
+    }
+    return typeof data.testDurationMinutes === 'number'
+      ? data.testDurationMinutes
+      : minutes;
+  } catch (err) {
+    if (err instanceof BackendUnavailableError) {
+      return localUpdateTestDurationMinutes(token, minutes);
     }
     throw err;
   }

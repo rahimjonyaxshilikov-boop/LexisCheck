@@ -3,12 +3,16 @@ import assert from 'node:assert/strict';
 import {
   buildStudentKey,
   calculateStudentAggregates,
+  DEFAULT_TEST_DURATION_MINUTES,
   formatCountdown,
   getAllSchoolClasses,
+  getStudentMasteryRank,
   gradeQuiz,
   isValidSchoolClass,
   normalizeStudentName,
   prepareShuffledQuiz,
+  TEST_DURATION_SECONDS,
+  validateTestDurationMinutes,
 } from './quizEngine';
 import type { Question, TestAttempt } from '../types/quiz';
 
@@ -44,10 +48,35 @@ test('student key normalization treats extra spaces and casing uniformly', () =>
 });
 
 test('formatCountdown formats MM:SS cleanly and clamps below zero', () => {
+  assert.equal(DEFAULT_TEST_DURATION_MINUTES, 15);
+  assert.equal(TEST_DURATION_SECONDS, 900);
+  assert.equal(formatCountdown(TEST_DURATION_SECONDS), '15:00');
   assert.equal(formatCountdown(600), '10:00');
   assert.equal(formatCountdown(65), '01:05');
   assert.equal(formatCountdown(0), '00:00');
   assert.equal(formatCountdown(-5), '00:00');
+});
+
+test('validateTestDurationMinutes enforces integer bounds 1..120', () => {
+  assert.deepEqual(validateTestDurationMinutes(15), { ok: true, minutes: 15 });
+  assert.deepEqual(validateTestDurationMinutes('25'), { ok: true, minutes: 25 });
+  assert.equal(validateTestDurationMinutes(0).ok, false);
+  assert.equal(validateTestDurationMinutes(-10).ok, false);
+  assert.equal(validateTestDurationMinutes(121).ok, false);
+  assert.equal(validateTestDurationMinutes(12.5).ok, false);
+  assert.equal(validateTestDurationMinutes('abc').ok, false);
+});
+
+test('getStudentMasteryRank computes tier title and progress accurately', () => {
+  const tier1 = getStudentMasteryRank(250);
+  assert.equal(tier1.title, 'Boshlovchi');
+  assert.equal(tier1.level, 1);
+  assert.equal(tier1.progressPercent, 50);
+
+  const tier5 = getStudentMasteryRank(16000);
+  assert.equal(tier5.title, 'Master Lexicon');
+  assert.equal(tier5.nextTitle, null);
+  assert.equal(tier5.progressPercent, 100);
 });
 
 test('prepareShuffledQuiz preserves correct answer text after shuffling options and questions', () => {
