@@ -84,6 +84,18 @@ export function setSavedTeacherToken(token: string | null): void {
   }
 }
 
+export class StudentEntryError extends Error {
+  code?: string;
+  suggestedName?: string;
+
+  constructor(message: string, code?: string, suggestedName?: string) {
+    super(message);
+    this.name = 'StudentEntryError';
+    this.code = code;
+    this.suggestedName = suggestedName;
+  }
+}
+
 export async function enterStudentAccount(
   fullName: string,
   className: string,
@@ -99,7 +111,11 @@ export async function enterStudentAccount(
       body: JSON.stringify({ fullName, className }),
     });
     if (!ok) {
-      throw new Error((data.error as string) || "Kirishda xatolik yuz berdi.");
+      throw new StudentEntryError(
+        (data.error as string) || "Kirishda xatolik yuz berdi.",
+        typeof data.code === 'string' ? data.code : undefined,
+        typeof data.suggestedName === 'string' ? data.suggestedName : undefined,
+      );
     }
     setSavedStudentToken(data.token as string);
     return data as {
@@ -121,6 +137,7 @@ export type StudentLookupResult =
   | {
       found: true;
       exactClassMatch: boolean;
+      reversedOrder: boolean;
       fullName: string;
       className: string;
       totalPoints: number;

@@ -8,11 +8,15 @@ import type {
 } from '../types/quiz';
 import {
   buildStudentKey,
+  buildStudentTokenBagKey,
   calculateStudentAggregates,
   DEFAULT_TEST_DURATION_MINUTES,
   isValidSchoolClass,
+  looksLikeUzbekSurname,
+  normalizeComparableText,
   normalizeStudentName,
   TOTAL_UNITS,
+  validateStudentNameOrder,
   validateTestDurationMinutes,
 } from '../utils/quizEngine';
 
@@ -173,17 +177,19 @@ export class AppStore {
     _existingToken?: string,
   ):
     | { ok: true; status: 'created' | 'resumed'; profile: StudentProfile; token: string }
-    | { ok: false; code: 'INVALID_INPUT'; error: string } {
-    const fullName = normalizeStudentName(rawName);
-    const className = rawClass.trim();
-
-    if (fullName.length < 3 || !fullName.includes(' ')) {
-      return {
-        ok: false,
-        code: 'INVALID_INPUT',
-        error: "Iltimos, to'liq ism va familiyangizni kiriting (masalan: Aziza Karimova).",
-      };
+    | {
+        ok: false;
+        code: 'INVALID_INPUT' | 'SURNAME_FIRST';
+        error: string;
+        suggestedName?: string;
+      } {
+    const nameCheck = validateStudentNameOrder(rawName);
+    if (!nameCheck.ok) {
+      return nameCheck;
     }
+
+    const fullName = nameCheck.fullName;
+    const className = rawClass.trim();
 
     if (!isValidSchoolClass(className)) {
       return {
@@ -194,14 +200,44 @@ export class AppStore {
     }
 
     const normalizedKey = buildStudentKey(fullName, className);
-    const existing = this.db.students.find((s) => s.normalizedKey === normalizedKey);
+    const tokenBagKey = buildStudentTokenBagKey(fullName, className);
 
-    if (existing) {
+    const exactMatch = this.db.students.find(
+      (s) => buildStudentKey(s.fullName, s.className) === normalizedKey,
+    );
+    if (exactMatch) {
       return {
         ok: true,
         status: 'resumed',
-        profile: toStudentProfile(existing),
-        token: existing.secretToken,
+        profile: toStudentProfile(exactMatch),
+        token: exactMatch.secretToken,
+      };
+    }
+
+    // Detect same person with swapped first/last name in the same class
+    const swappedMatch = this.db.students.find(
+      (s) => buildStudentTokenBagKey(s.fullName, s.className) === tokenBagKey,
+    );
+    if (swappedMatch) {
+      const existingFirstToken = swappedMatch.fullName.trim().split(/\s+/)[0] ?? '';
+      // If legacy DB record had surname first while new input has first name first, normalize & resume
+      if (looksLikeUzbekSurname(existingFirstToken)) {
+        swappedMatch.fullName = fullName;
+        swappedMatch.normalizedKey = normalizedKey;
+        this.persist();
+        return {
+          ok: true,
+          status: 'resumed',
+          profile: toStudentProfile(swappedMatch),
+          token: swappedMatch.secretToken,
+        };
+      }
+      // Otherwise existing record has first name first -> reject reversed order & guide back
+      return {
+        ok: false,
+        code: 'SURNAME_FIRST',
+        error: `Avval ismingizni, keyin familiyangizni yozing (masalan: ${swappedMatch.fullName}).`,
+        suggestedName: swappedMatch.fullName,
       };
     }
 
@@ -234,6 +270,7 @@ export class AppStore {
     | {
         found: true;
         exactClassMatch: boolean;
+        reversedOrder: boolean;
         fullName: string;
         className: string;
         totalPoints: number;
@@ -242,25 +279,52 @@ export class AppStore {
       }
     | { found: false } {
     const fullName = normalizeStudentName(rawName);
-    if (fullName.length < 3 || !fullName.includes(' ')) {
+    const parts = fullName.split(' ').filter(Boolean);
+    if (fullName.length < 3 || parts.length < 2) {
       return { found: false };
     }
-    const targetLower = fullName.toLowerCase();
+
     const trimmedClass = rawClass?.trim();
+    const targetExact = normalizeComparableText(fullName);
+    const targetBag = normalizeComparableText(fullName).split(' ').filter(Boolean).sort().join('|');
 
     let match: StoredStudent | undefined;
     let exactClassMatch = false;
+    let reversedOrder = false;
 
     if (trimmedClass && isValidSchoolClass(trimmedClass)) {
       const exactKey = buildStudentKey(fullName, trimmedClass);
-      match = this.db.students.find((s) => s.normalizedKey === exactKey);
-      if (match) exactClassMatch = true;
+      match = this.db.students.find((s) => buildStudentKey(s.fullName, s.className) === exactKey);
+      if (match) {
+        exactClassMatch = true;
+      } else {
+        const bagKey = buildStudentTokenBagKey(fullName, trimmedClass);
+        match = this.db.students.find(
+          (s) => buildStudentTokenBagKey(s.fullName, s.className) === bagKey,
+        );
+        if (match) {
+          exactClassMatch = true;
+          const matchFirstToken = match.fullName.trim().split(/\s+/)[0] ?? '';
+          reversedOrder = looksLikeUzbekSurname(parts[0]) || !looksLikeUzbekSurname(matchFirstToken);
+        }
+      }
     }
 
     if (!match) {
       match = this.db.students.find(
-        (s) => normalizeStudentName(s.fullName).toLowerCase() === targetLower,
+        (s) => normalizeComparableText(s.fullName) === targetExact,
       );
+      if (!match) {
+        match = this.db.students.find(
+          (s) =>
+            normalizeComparableText(s.fullName).split(' ').filter(Boolean).sort().join('|') ===
+            targetBag,
+        );
+        if (match) {
+          const matchFirstToken = match.fullName.trim().split(/\s+/)[0] ?? '';
+          reversedOrder = looksLikeUzbekSurname(parts[0]) || !looksLikeUzbekSurname(matchFirstToken);
+        }
+      }
     }
 
     if (!match) return { found: false };
@@ -268,6 +332,7 @@ export class AppStore {
     return {
       found: true,
       exactClassMatch,
+      reversedOrder,
       fullName: profile.fullName,
       className: profile.className,
       totalPoints: profile.totalPoints,

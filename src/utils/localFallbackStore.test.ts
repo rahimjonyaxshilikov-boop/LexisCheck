@@ -8,6 +8,7 @@ import {
   localGetTestDurationMinutes,
   localLoginTeacher,
   localLookupStudent,
+  LocalStudentEntryError,
   localSubmitAttempt,
   localUpdateCheaterCode,
   localUpdateTeacherPassword,
@@ -97,4 +98,40 @@ test('localFallbackStore supports student entry, returning resume, attempt save,
 
   localDeleteStudent(newToken, entered.profile.id, storage);
   assert.equal(localFetchTeacherDashboard(newToken, storage).length, 0);
+});
+
+test('localFallbackStore rejects surname-first, deduplicates apostrophes, and blocks reversed names', async () => {
+  const storage = createMemoryStorage();
+
+  assert.throws(
+    () => localEnterStudent('Karimova Aziza', '8-03', null, storage),
+    (err: unknown) =>
+      err instanceof LocalStudentEntryError &&
+      err.code === 'SURNAME_FIRST' &&
+      err.suggestedName === 'Aziza Karimova',
+  );
+
+  const first = localEnterStudent("O'tkir G'aniyev", '8-03', null, storage);
+  const second = localEnterStudent('Oʻtkir Gʻaniyev', '8-03', null, storage);
+  assert.equal(second.status, 'resumed');
+  assert.equal(second.token, first.token);
+
+  localEnterStudent('Dilshod Bek', '8-03', null, storage);
+  const lookup = localLookupStudent('Bek Dilshod', '8-03', storage);
+  assert.equal(lookup.found, true);
+  if (lookup.found) {
+    assert.equal(lookup.reversedOrder, true);
+    assert.equal(lookup.fullName, 'Dilshod Bek');
+  }
+
+  assert.throws(
+    () => localEnterStudent('Bek Dilshod', '8-03', null, storage),
+    (err: unknown) =>
+      err instanceof LocalStudentEntryError &&
+      err.code === 'SURNAME_FIRST' &&
+      err.suggestedName === 'Dilshod Bek',
+  );
+
+  const teacherToken = await localLoginTeacher('Jalolova@2026', storage);
+  assert.equal(localFetchTeacherDashboard(teacherToken, storage).length, 2);
 });

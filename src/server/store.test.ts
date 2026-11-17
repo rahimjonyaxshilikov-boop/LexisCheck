@@ -222,3 +222,99 @@ test('teacher can inspect and update test timer duration (default 15 minutes)', 
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('store rejects surname-first entry, deduplicates apostrophes, and prevents duplicate swapped accounts', () => {
+  const { store, cleanup } = createTempStore();
+  try {
+    // 1. Surname-first entry is rejected with suggestedName
+    const surnameFirst = store.enterStudent('Karimova Aziza', '8-03');
+    assert.equal(surnameFirst.ok, false);
+    if (!surnameFirst.ok) {
+      assert.equal(surnameFirst.code, 'SURNAME_FIRST');
+      assert.equal(surnameFirst.suggestedName, 'Aziza Karimova');
+    }
+
+    // 2. Canonical registration succeeds
+    const valid = store.enterStudent("O'tkir G'aniyev", '8-03');
+    assert.equal(valid.ok, true);
+    if (!valid.ok) return;
+    assert.equal(valid.status, 'created');
+
+    // 3. Re-entering with Uzbek curly apostrophes resumes the exact same student (1 student total)
+    const apostropheVariant = store.enterStudent('Oʻtkir Gʻaniyev', '8-03');
+    assert.equal(apostropheVariant.ok, true);
+    if (!apostropheVariant.ok) return;
+    assert.equal(apostropheVariant.status, 'resumed');
+    assert.equal(apostropheVariant.token, valid.token);
+
+    // 4. Non--ov surname student: first entry sets canonical order; reversed order is rejected
+    const nonOvFirst = store.enterStudent('Dilshod Bek', '8-03');
+    assert.equal(nonOvFirst.ok, true);
+    if (!nonOvFirst.ok) return;
+
+    const reversedLookup = store.lookupStudent('Bek Dilshod', '8-03');
+    assert.equal(reversedLookup.found, true);
+    if (reversedLookup.found) {
+      assert.equal(reversedLookup.reversedOrder, true);
+      assert.equal(reversedLookup.fullName, 'Dilshod Bek');
+    }
+
+    const reversedSubmit = store.enterStudent('Bek Dilshod', '8-03');
+    assert.equal(reversedSubmit.ok, false);
+    if (!reversedSubmit.ok) {
+      assert.equal(reversedSubmit.code, 'SURNAME_FIRST');
+      assert.equal(reversedSubmit.suggestedName, 'Dilshod Bek');
+    }
+
+    // Total student count in teacher dashboard remains 2 (no duplicates created)
+    const teacherLogin = store.loginTeacher('Jalolova@2026');
+    assert.equal(teacherLogin.ok, true);
+    if (!teacherLogin.ok) return;
+    const dashboard = store.getTeacherDashboard(teacherLogin.token);
+    assert.equal(dashboard.ok, true);
+    if (dashboard.ok) {
+      assert.equal(dashboard.students.length, 2);
+    }
+  } finally {
+    cleanup();
+  }
+});
+
+test('store upgrades legacy surname-first student record when re-entered properly without duplicating', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vocab-legacy-'));
+  const file = path.join(dir, 'db.json');
+  try {
+    // Initialize valid DB structure first, then inject a legacy surname-first student record
+    new AppStore(file);
+    const existing = JSON.parse(fs.readFileSync(file, 'utf8')) as Record<string, unknown>;
+    existing.students = [
+      {
+        id: 'legacy-1',
+        fullName: 'Karimova Aziza',
+        className: '8-03',
+        normalizedKey: 'karimova aziza::8-03',
+        secretToken: 'legacy-token-1',
+        studiedUnits: [1],
+        attempts: [],
+        createdAt: '2026-11-10T10:00:00Z',
+      },
+    ];
+    fs.writeFileSync(file, JSON.stringify(existing), 'utf8');
+
+    const store = new AppStore(file);
+    const lookup = store.lookupStudent('Aziza Karimova', '8-03');
+    assert.equal(lookup.found, true);
+    if (lookup.found) {
+      assert.equal(lookup.reversedOrder, false);
+    }
+
+    const resumed = store.enterStudent('Aziza Karimova', '8-03');
+    assert.equal(resumed.ok, true);
+    if (!resumed.ok) return;
+    assert.equal(resumed.status, 'resumed');
+    assert.equal(resumed.token, 'legacy-token-1');
+    assert.equal(resumed.profile.fullName, 'Aziza Karimova');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

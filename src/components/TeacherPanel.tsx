@@ -27,8 +27,10 @@ import {
   DEFAULT_TEST_DURATION_MINUTES,
   formatCountdown,
   getAllSchoolClasses,
+  getStudentMasteryRank,
   MAX_TEST_DURATION_MINUTES,
   MIN_TEST_DURATION_MINUTES,
+  normalizeComparableText,
   validateTestDurationMinutes,
 } from '../utils/quizEngine';
 import { ALL_UNITS } from '../data/units';
@@ -236,17 +238,17 @@ export function TeacherPanel({
   }
 
   const filteredStudents = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const normalizedQuery = normalizeComparableText(search);
+    const queryTokens = normalizedQuery ? normalizedQuery.split(' ').filter(Boolean) : [];
     return students.filter((s) => {
       if (classFilter !== 'all' && s.className !== classFilter) return false;
       if (unitFilter !== 'all') {
         const unitNum = Number(unitFilter);
         if (!s.completedUnits.includes(unitNum)) return false;
       }
-      if (!q) return true;
-      return (
-        s.fullName.toLowerCase().includes(q) || s.className.toLowerCase().includes(q)
-      );
+      if (queryTokens.length === 0) return true;
+      const comparableStudentText = `${normalizeComparableText(s.fullName)} ${normalizeComparableText(s.className)}`;
+      return queryTokens.every((token) => comparableStudentText.includes(token));
     });
   }, [students, search, classFilter, unitFilter]);
 
@@ -714,7 +716,8 @@ export function TeacherPanel({
             <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-4 dark:border-slate-800">
               <div>
                 <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                  {selectedStudent.className} sinf · Umumiy ball: {selectedStudent.totalPoints} · Bajarilgan unitlar: {selectedStudent.completedUnits.length}/{ALL_UNITS.length}
+                  {selectedStudent.className} sinf · Daraja {getStudentMasteryRank(selectedStudent.totalPoints).level}:{' '}
+                  {getStudentMasteryRank(selectedStudent.totalPoints).title} · Umumiy ball: {selectedStudent.totalPoints} · Bajarilgan unitlar: {selectedStudent.completedUnits.length}/{ALL_UNITS.length}
                 </div>
                 <h2 className="mt-0.5 text-lg font-bold text-slate-900 dark:text-slate-100">
                   {selectedStudent.fullName}

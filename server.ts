@@ -23,7 +23,11 @@ async function startServer() {
 
     const result = store.enterStudent(fullName, className, existingToken);
     if (!result.ok) {
-      res.status(400).json({ error: result.error, code: result.code });
+      res.status(400).json({
+        error: result.error,
+        code: result.code,
+        suggestedName: result.suggestedName,
+      });
       return;
     }
 

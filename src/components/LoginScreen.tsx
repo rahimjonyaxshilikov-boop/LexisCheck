@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { ArrowRight, BookOpen, Lock, UserCheck } from 'lucide-react';
+import { AlertTriangle, ArrowRight, BookOpen, Lock, Sparkles, UserCheck } from 'lucide-react';
 import {
   lookupStudentProfile,
+  StudentEntryError,
   type StudentLookupResult,
 } from '../utils/api';
 import {
@@ -10,6 +11,7 @@ import {
   SCHOOL_GRADES,
   SCHOOL_SECTIONS,
   TOTAL_UNITS,
+  validateStudentNameOrder,
 } from '../utils/quizEngine';
 
 interface LoginScreenProps {
@@ -27,22 +29,38 @@ export function LoginScreen({
   const [selectedGrade, setSelectedGrade] = useState<number>(8);
   const [selectedSection, setSelectedSection] = useState<string>('03');
   const [error, setError] = useState<string | null>(null);
+  const [suggestedFixName, setSuggestedFixName] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [lookupMatch, setLookupMatch] = useState<StudentLookupResult | null>(null);
 
   const selectedClass = `${selectedGrade}-${selectedSection}`;
 
+  const trimmedName = fullName.trim().replace(/\s+/g, ' ');
+  const liveNameCheck = trimmedName.includes(' ')
+    ? validateStudentNameOrder(trimmedName)
+    : null;
+  const liveSurnameFirst =
+    liveNameCheck && !liveNameCheck.ok && liveNameCheck.code === 'SURNAME_FIRST'
+      ? liveNameCheck
+      : null;
+
+  const isExactClassReversed = Boolean(
+    lookupMatch?.found && lookupMatch.exactClassMatch && lookupMatch.reversedOrder,
+  );
+  const liveSuggestedName =
+    liveSurnameFirst?.suggestedName ??
+    (isExactClassReversed && lookupMatch?.found ? lookupMatch.fullName : null);
+
   // Detect returning student while typing full name
   useEffect(() => {
-    const trimmed = fullName.trim().replace(/\s+/g, ' ');
-    if (trimmed.length < 3 || !trimmed.includes(' ')) {
+    if (trimmedName.length < 3 || !trimmedName.includes(' ')) {
       setLookupMatch(null);
       return;
     }
 
     let cancelled = false;
     const timer = window.setTimeout(async () => {
-      const result = await lookupStudentProfile(trimmed, selectedClass);
+      const result = await lookupStudentProfile(trimmedName, selectedClass);
       if (!cancelled) {
         setLookupMatch(result);
       }
@@ -52,7 +70,13 @@ export function LoginScreen({
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [fullName, selectedClass]);
+  }, [trimmedName, selectedClass]);
+
+  function applySuggestedFix(fixedName: string) {
+    setFullName(fixedName);
+    setError(null);
+    setSuggestedFixName(null);
+  }
 
   async function handleQuickResumeMatchedClass(
     matchedName: string,
@@ -65,6 +89,7 @@ export function LoginScreen({
       setSelectedSection(secStr);
     }
     setError(null);
+    setSuggestedFixName(null);
     setSubmitting(true);
     try {
       await onSuccessEnter(matchedName, matchedClass);
@@ -78,22 +103,45 @@ export function LoginScreen({
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    setSuggestedFixName(null);
 
-    const trimmed = fullName.trim().replace(/\s+/g, ' ');
-    if (trimmed.length < 3 || !trimmed.includes(' ')) {
-      setError("Iltimos, to'liq ism va familiyangizni kiriting (masalan: Aziza Karimova).");
+    const nameCheck = validateStudentNameOrder(fullName);
+    if (!nameCheck.ok) {
+      setError(nameCheck.error);
+      setSuggestedFixName(nameCheck.suggestedName ?? null);
       return;
     }
 
     setSubmitting(true);
     try {
-      await onSuccessEnter(trimmed, selectedClass);
+      await onSuccessEnter(nameCheck.fullName, selectedClass);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Kirishda xatolik yuz berdi.");
+      const message =
+        err instanceof Error ? err.message : "Kirishda xatolik yuz berdi.";
+      const maybeSuggested =
+        err instanceof StudentEntryError ||
+        (typeof err === 'object' && err !== null && 'suggestedName' in err)
+          ? ((err as { suggestedName?: string }).suggestedName ?? null)
+          : null;
+      setError(message);
+      setSuggestedFixName(maybeSuggested);
     } finally {
       setSubmitting(false);
     }
   }
+
+  const showReturningBanner = Boolean(
+    lookupMatch?.found && !liveSurnameFirst && !isExactClassReversed,
+  );
+  const showSurnameWarning = Boolean(
+    !error && (liveSurnameFirst || isExactClassReversed) && liveSuggestedName,
+  );
+  const canSubmitDirectlyToProfile = Boolean(
+    lookupMatch?.found &&
+      lookupMatch.exactClassMatch &&
+      !lookupMatch.reversedOrder &&
+      !liveSurnameFirst,
+  );
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 items-center px-4 py-8 sm:px-6 sm:py-12">
@@ -148,14 +196,14 @@ export function LoginScreen({
           </div>
         </section>
 
-        {/* Right student sign-in form */}
+        {/* Right student entry form */}
         <section className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 lg:col-span-6 dark:border-slate-800 dark:bg-slate-900">
           <div>
             <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
               Oʻquvchi kirishi
             </h2>
             <p className="mt-1.5 text-sm text-slate-600 dark:text-slate-400">
-              Toʻliq ism-familiyangizni kiriting va sinfingizni tanlang.
+              Avval ismingizni, keyin familiyangizni kiriting va sinfingizni tanlang.
             </p>
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-5" noValidate>
@@ -164,7 +212,7 @@ export function LoginScreen({
                   htmlFor="student-fullname"
                   className="block text-sm font-semibold text-slate-800 dark:text-slate-200"
                 >
-                  Toʻliq ism va familiya
+                  Ism va familiya (avval ism)
                 </label>
                 <input
                   id="student-fullname"
@@ -175,6 +223,7 @@ export function LoginScreen({
                   onChange={(e) => {
                     setFullName(e.target.value);
                     if (error) setError(null);
+                    if (suggestedFixName) setSuggestedFixName(null);
                   }}
                   placeholder="Masalan: Aziza Karimova"
                   className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base text-slate-900 placeholder:text-slate-400 focus:border-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-sky-400"
@@ -202,6 +251,7 @@ export function LoginScreen({
                         onClick={() => {
                           setSelectedGrade(grade);
                           if (error) setError(null);
+                          if (suggestedFixName) setSuggestedFixName(null);
                         }}
                         className={`min-h-[44px] rounded-xl border text-sm font-semibold tabular-nums transition-colors ${
                           active
@@ -226,6 +276,7 @@ export function LoginScreen({
                         onClick={() => {
                           setSelectedSection(sec);
                           if (error) setError(null);
+                          if (suggestedFixName) setSuggestedFixName(null);
                         }}
                         className={`min-h-[44px] rounded-xl border text-sm font-semibold tabular-nums transition-colors ${
                           active
@@ -240,7 +291,36 @@ export function LoginScreen({
                 </div>
               </div>
 
-              {lookupMatch?.found && (
+              {showSurnameWarning && liveSuggestedName && (
+                <div
+                  data-testid="surname-first-warning"
+                  role="status"
+                  className="rounded-xl border border-amber-300 bg-amber-50/90 p-3.5 text-sm text-amber-950 dark:border-amber-800/70 dark:bg-amber-950/40 dark:text-amber-200"
+                >
+                  <div className="flex items-start gap-2.5">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                    <div className="min-w-0 flex-1">
+                      <div className="font-semibold">
+                        Avval ismingizni, keyin familiyangizni yozing!
+                      </div>
+                      <div className="mt-0.5 text-xs text-amber-800 dark:text-amber-300">
+                        Familiya birinchi yozilganda kirishga ruxsat berilmaydi.
+                      </div>
+                      <button
+                        type="button"
+                        data-testid="fix-name-order-btn"
+                        onClick={() => applySuggestedFix(liveSuggestedName)}
+                        className="mt-2 inline-flex min-h-[34px] items-center gap-1.5 rounded-lg bg-amber-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-amber-700 dark:bg-amber-500 dark:text-slate-950 dark:hover:bg-amber-400"
+                      >
+                        <Sparkles className="h-3.5 w-3.5" />
+                        <span>«{liveSuggestedName}» deb toʻgʻrilash</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {showReturningBanner && lookupMatch?.found && (
                 <div
                   data-testid="returning-student-banner"
                   role="status"
@@ -283,10 +363,25 @@ export function LoginScreen({
               {error && (
                 <div
                   role="alert"
-                  className="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 p-3.5 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300"
+                  className="rounded-xl border border-red-200 bg-red-50 p-3.5 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300"
                 >
-                  <Lock className="mt-0.5 h-4 w-4 shrink-0" />
-                  <span>{error}</span>
+                  <div className="flex items-start gap-2.5">
+                    <Lock className="mt-0.5 h-4 w-4 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <div>{error}</div>
+                      {suggestedFixName && (
+                        <button
+                          type="button"
+                          data-testid="fix-name-order-btn"
+                          onClick={() => applySuggestedFix(suggestedFixName)}
+                          className="mt-2 inline-flex min-h-[34px] items-center gap-1.5 rounded-lg bg-red-700 px-3 text-xs font-semibold text-white transition-colors hover:bg-red-800 dark:bg-red-500 dark:text-slate-950 dark:hover:bg-red-400"
+                        >
+                          <Sparkles className="h-3.5 w-3.5" />
+                          <span>«{suggestedFixName}» deb toʻgʻrilash</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -298,7 +393,7 @@ export function LoginScreen({
                 <span>
                   {submitting
                     ? 'Tekshirilmoqda...'
-                    : lookupMatch?.found && lookupMatch.exactClassMatch
+                    : canSubmitDirectlyToProfile
                       ? 'Profilga kirish'
                       : 'Davom etish (Continue)'}
                 </span>

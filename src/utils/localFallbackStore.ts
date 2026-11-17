@@ -5,12 +5,28 @@ import type {
 } from '../types/quiz';
 import {
   buildStudentKey,
+  buildStudentTokenBagKey,
   calculateStudentAggregates,
   DEFAULT_TEST_DURATION_MINUTES,
   isValidSchoolClass,
+  looksLikeUzbekSurname,
+  normalizeComparableText,
   normalizeStudentName,
+  validateStudentNameOrder,
   validateTestDurationMinutes,
 } from './quizEngine';
+
+export class LocalStudentEntryError extends Error {
+  code: string;
+  suggestedName?: string;
+
+  constructor(message: string, code: string, suggestedName?: string) {
+    super(message);
+    this.name = 'LocalStudentEntryError';
+    this.code = code;
+    this.suggestedName = suggestedName;
+  }
+}
 
 const LOCAL_DB_KEY = 'lexischeck_local_db_v1';
 const DEFAULT_TEACHER_HASH =
@@ -167,26 +183,61 @@ export function localEnterStudent(
   _existingToken?: string | null,
   customStorage?: StorageLike,
 ): { status: 'created' | 'resumed'; profile: StudentProfile; token: string } {
+  const nameCheck = validateStudentNameOrder(rawName);
+  if (!nameCheck.ok) {
+    throw new LocalStudentEntryError(
+      nameCheck.error,
+      nameCheck.code,
+      nameCheck.suggestedName,
+    );
+  }
+
   const storage = getStorage(customStorage);
   const db = loadDb(storage);
-  const fullName = normalizeStudentName(rawName);
+  const fullName = nameCheck.fullName;
   const className = rawClass.trim();
 
-  if (fullName.length < 3 || !fullName.includes(' ')) {
-    throw new Error("Iltimos, to'liq ism va familiyangizni kiriting (masalan: Aziza Karimova).");
-  }
   if (!isValidSchoolClass(className)) {
-    throw new Error("Sinf noto'g'ri tanlangan. 5-01 dan 10-03 gacha bo'lgan sinflardan birini tanlang.");
+    throw new LocalStudentEntryError(
+      "Sinf noto'g'ri tanlangan. 5-01 dan 10-03 gacha bo'lgan sinflardan birini tanlang.",
+      'INVALID_INPUT',
+    );
   }
 
   const normalizedKey = buildStudentKey(fullName, className);
-  const existing = db.students.find((s) => s.normalizedKey === normalizedKey);
-  if (existing) {
+  const tokenBagKey = buildStudentTokenBagKey(fullName, className);
+
+  const exactMatch = db.students.find(
+    (s) => buildStudentKey(s.fullName, s.className) === normalizedKey,
+  );
+  if (exactMatch) {
     return {
       status: 'resumed',
-      profile: toProfile(existing),
-      token: existing.secretToken,
+      profile: toProfile(exactMatch),
+      token: exactMatch.secretToken,
     };
+  }
+
+  const swappedMatch = db.students.find(
+    (s) => buildStudentTokenBagKey(s.fullName, s.className) === tokenBagKey,
+  );
+  if (swappedMatch) {
+    const existingFirstToken = swappedMatch.fullName.trim().split(/\s+/)[0] ?? '';
+    if (looksLikeUzbekSurname(existingFirstToken)) {
+      swappedMatch.fullName = fullName;
+      swappedMatch.normalizedKey = normalizedKey;
+      saveDb(storage, db);
+      return {
+        status: 'resumed',
+        profile: toProfile(swappedMatch),
+        token: swappedMatch.secretToken,
+      };
+    }
+    throw new LocalStudentEntryError(
+      `Avval ismingizni, keyin familiyangizni yozing (masalan: ${swappedMatch.fullName}).`,
+      'SURNAME_FIRST',
+      swappedMatch.fullName,
+    );
   }
 
   const created: StoredLocalStudent = {
@@ -216,6 +267,7 @@ export function localLookupStudent(
   | {
       found: true;
       exactClassMatch: boolean;
+      reversedOrder: boolean;
       fullName: string;
       className: string;
       totalPoints: number;
@@ -224,27 +276,51 @@ export function localLookupStudent(
     }
   | { found: false } {
   const fullName = normalizeStudentName(rawName);
-  if (fullName.length < 3 || !fullName.includes(' ')) {
+  const parts = fullName.split(' ').filter(Boolean);
+  if (fullName.length < 3 || parts.length < 2) {
     return { found: false };
   }
   const storage = getStorage(customStorage);
   const db = loadDb(storage);
-  const targetLower = fullName.toLowerCase();
+  const targetExact = normalizeComparableText(fullName);
+  const targetBag = normalizeComparableText(fullName).split(' ').filter(Boolean).sort().join('|');
   const trimmedClass = rawClass?.trim();
 
   let match: StoredLocalStudent | undefined;
   let exactClassMatch = false;
+  let reversedOrder = false;
 
   if (trimmedClass && isValidSchoolClass(trimmedClass)) {
     const exactKey = buildStudentKey(fullName, trimmedClass);
-    match = db.students.find((s) => s.normalizedKey === exactKey);
-    if (match) exactClassMatch = true;
+    match = db.students.find((s) => buildStudentKey(s.fullName, s.className) === exactKey);
+    if (match) {
+      exactClassMatch = true;
+    } else {
+      const bagKey = buildStudentTokenBagKey(fullName, trimmedClass);
+      match = db.students.find(
+        (s) => buildStudentTokenBagKey(s.fullName, s.className) === bagKey,
+      );
+      if (match) {
+        exactClassMatch = true;
+        const matchFirstToken = match.fullName.trim().split(/\s+/)[0] ?? '';
+        reversedOrder = looksLikeUzbekSurname(parts[0]) || !looksLikeUzbekSurname(matchFirstToken);
+      }
+    }
   }
 
   if (!match) {
-    match = db.students.find(
-      (s) => normalizeStudentName(s.fullName).toLowerCase() === targetLower,
-    );
+    match = db.students.find((s) => normalizeComparableText(s.fullName) === targetExact);
+    if (!match) {
+      match = db.students.find(
+        (s) =>
+          normalizeComparableText(s.fullName).split(' ').filter(Boolean).sort().join('|') ===
+          targetBag,
+      );
+      if (match) {
+        const matchFirstToken = match.fullName.trim().split(/\s+/)[0] ?? '';
+        reversedOrder = looksLikeUzbekSurname(parts[0]) || !looksLikeUzbekSurname(matchFirstToken);
+      }
+    }
   }
 
   if (!match) return { found: false };
@@ -252,6 +328,7 @@ export function localLookupStudent(
   return {
     found: true,
     exactClassMatch,
+    reversedOrder,
     fullName: profile.fullName,
     className: profile.className,
     totalPoints: profile.totalPoints,

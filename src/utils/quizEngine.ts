@@ -48,12 +48,74 @@ export function isValidSchoolClass(className: string): boolean {
   return /^(5|6|7|8|9|10)-0[1-3]$/.test(className.trim());
 }
 
+export function normalizeComparableText(text: string): string {
+  return text
+    .trim()
+    .replace(/\s+/g, ' ')
+    .replace(/['’`ʻʼʽˈ]/g, '')
+    .toLowerCase();
+}
+
 export function normalizeStudentName(fullName: string): string {
   return fullName.trim().replace(/\s+/g, ' ');
 }
 
 export function buildStudentKey(fullName: string, className: string): string {
-  return `${normalizeStudentName(fullName).toLowerCase()}::${className.trim()}`;
+  return `${normalizeComparableText(fullName)}::${className.trim()}`;
+}
+
+export function buildStudentTokenBagKey(fullName: string, className: string): string {
+  const tokens = normalizeComparableText(fullName)
+    .split(' ')
+    .filter(Boolean)
+    .sort();
+  return `${tokens.join('|')}::${className.trim()}`;
+}
+
+const SURNAME_SUFFIX_RE =
+  /^[a-z]{3,}(?:ov|ova|ev|eva|yev|yeva|ovich|ovna|evich|evna|skiy|skaya)$/;
+const NON_SURNAME_GIVEN_NAMES = new Set(['yakov']);
+
+export function looksLikeUzbekSurname(token: string): boolean {
+  const cleaned = normalizeComparableText(token).replace(/[^a-z]/g, '');
+  if (cleaned.length < 5 || NON_SURNAME_GIVEN_NAMES.has(cleaned)) return false;
+  return SURNAME_SUFFIX_RE.test(cleaned);
+}
+
+export function validateStudentNameOrder(
+  rawName: string,
+):
+  | { ok: true; fullName: string }
+  | {
+      ok: false;
+      code: 'INVALID_INPUT' | 'SURNAME_FIRST';
+      error: string;
+      suggestedName?: string;
+    } {
+  const fullName = normalizeStudentName(rawName);
+  const parts = fullName.split(' ').filter(Boolean);
+
+  if (fullName.length < 3 || parts.length < 2) {
+    return {
+      ok: false,
+      code: 'INVALID_INPUT',
+      error: "Iltimos, to'liq ism va familiyangizni kiriting (masalan: Aziza Karimova).",
+    };
+  }
+
+  if (looksLikeUzbekSurname(parts[0]) && !looksLikeUzbekSurname(parts[1])) {
+    const suggestedParts =
+      parts.length === 2 ? [parts[1], parts[0]] : [parts[1], parts[0], ...parts.slice(2)];
+    const suggestedName = suggestedParts.join(' ');
+    return {
+      ok: false,
+      code: 'SURNAME_FIRST',
+      error: `Avval ismingizni, keyin familiyangizni yozing (masalan: ${suggestedName}).`,
+      suggestedName,
+    };
+  }
+
+  return { ok: true, fullName };
 }
 
 export function formatCountdown(totalSeconds: number): string {

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildStudentKey,
+  buildStudentTokenBagKey,
   calculateStudentAggregates,
   DEFAULT_TEST_DURATION_MINUTES,
   formatCountdown,
@@ -9,9 +10,12 @@ import {
   getStudentMasteryRank,
   gradeQuiz,
   isValidSchoolClass,
+  looksLikeUzbekSurname,
+  normalizeComparableText,
   normalizeStudentName,
   prepareShuffledQuiz,
   TEST_DURATION_SECONDS,
+  validateStudentNameOrder,
   validateTestDurationMinutes,
 } from './quizEngine';
 import type { Question, TestAttempt } from '../types/quiz';
@@ -35,16 +39,57 @@ test('isValidSchoolClass validates 5-10 with 01-03 sections only', () => {
   assert.equal(isValidSchoolClass('8A'), false);
 });
 
-test('student key normalization treats extra spaces and casing uniformly', () => {
+test('student key normalization treats extra spaces, apostrophes, token order, and casing uniformly', () => {
   assert.equal(normalizeStudentName('  Aziza   Karimova '), 'Aziza Karimova');
+  assert.equal(
+    normalizeComparableText("O'tkir  Gʻaniyev"),
+    normalizeComparableText("O`tkir G'aniyev"),
+  );
   assert.equal(
     buildStudentKey('Aziza  Karimova', '8-03'),
     buildStudentKey('aziza karimova', '8-03'),
+  );
+  assert.equal(
+    buildStudentKey("O'tkir G'aniyev", '8-03'),
+    buildStudentKey('Oʻtkir Gʻaniyev', '8-03'),
+  );
+  assert.equal(
+    buildStudentTokenBagKey('Karimova Aziza', '8-03'),
+    buildStudentTokenBagKey('Aziza Karimova', '8-03'),
   );
   assert.notEqual(
     buildStudentKey('Aziza Karimova', '8-03'),
     buildStudentKey('Aziza Karimova', '8-02'),
   );
+});
+
+test('looksLikeUzbekSurname and validateStudentNameOrder detect surname-first entries accurately', () => {
+  assert.equal(looksLikeUzbekSurname('Karimova'), true);
+  assert.equal(looksLikeUzbekSurname('Aliyev'), true);
+  assert.equal(looksLikeUzbekSurname("Jo'rayev"), true);
+  assert.equal(looksLikeUzbekSurname('Aziza'), false);
+  assert.equal(looksLikeUzbekSurname('Eva'), false);
+  assert.equal(looksLikeUzbekSurname('Yakov'), false);
+  assert.equal(looksLikeUzbekSurname('Shohzoda'), false);
+
+  const rejectedTwo = validateStudentNameOrder('Karimova Aziza');
+  assert.equal(rejectedTwo.ok, false);
+  if (!rejectedTwo.ok) {
+    assert.equal(rejectedTwo.code, 'SURNAME_FIRST');
+    assert.equal(rejectedTwo.suggestedName, 'Aziza Karimova');
+  }
+
+  const rejectedThree = validateStudentNameOrder('Karimov Jasur Alisherovich');
+  assert.equal(rejectedThree.ok, false);
+  if (!rejectedThree.ok) {
+    assert.equal(rejectedThree.code, 'SURNAME_FIRST');
+    assert.equal(rejectedThree.suggestedName, 'Jasur Karimov Alisherovich');
+  }
+
+  assert.deepEqual(validateStudentNameOrder('  Aziza   Karimova '), {
+    ok: true,
+    fullName: 'Aziza Karimova',
+  });
 });
 
 test('formatCountdown formats MM:SS cleanly and clamps below zero', () => {
