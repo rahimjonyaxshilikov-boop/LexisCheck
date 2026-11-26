@@ -186,21 +186,21 @@ export function TestRunner({
   const selectedOptionIndex = currentQuestion ? answers[currentQuestion.id] : undefined;
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+    <div className="obsidian-stage flex min-h-screen flex-col text-slate-900 dark:text-slate-100">
       {/* Slim single-row test bar (compact height so maximum viewport goes to reading the test) */}
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur-sm dark:border-slate-800 dark:bg-slate-950/95">
+      <header className="gloss-header sticky top-0 z-30">
         <div className="mx-auto flex h-13 max-w-4xl items-center justify-between gap-3 px-3 sm:px-6">
           <div className="flex min-w-0 items-center gap-2.5">
             <button
               type="button"
               onClick={() => setConfirmExit(true)}
               aria-label="Testdan chiqish"
-              className="inline-flex h-9 items-center gap-1 rounded-lg px-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 whitespace-nowrap shrink-0 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+              className="inline-flex h-9 items-center gap-1 rounded-lg px-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 whitespace-nowrap shrink-0 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
             >
               <ArrowLeft className="h-4 w-4" />
               <span className="hidden sm:inline">Chiqish</span>
             </button>
-            <span className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">
+            <span className="truncate text-sm font-bold text-slate-900 dark:text-white">
               Unit {unit.unitNumber}: {unit.title}
             </span>
           </div>
@@ -218,8 +218,8 @@ export function TestRunner({
               aria-live="off"
               className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 font-mono-tabular text-xs font-semibold sm:text-sm ${
                 isTimeLow
-                  ? 'border-red-300 bg-red-50 text-red-700 dark:border-red-900/70 dark:bg-red-950/60 dark:text-red-300'
-                  : 'border-slate-200 bg-slate-50 text-slate-800 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100'
+                  ? 'border-red-300 bg-red-50 text-red-700 dark:border-red-500/50 dark:bg-red-950/50 dark:text-red-300'
+                  : 'border-slate-200 bg-slate-50/90 text-slate-800 dark:border-white/15 dark:bg-black/45 dark:text-slate-100'
               }`}
             >
               <Clock className="h-3.5 w-3.5 shrink-0" />
@@ -230,17 +230,17 @@ export function TestRunner({
               type="button"
               onClick={onToggleDarkMode}
               aria-label={darkMode ? "Kunduzgi rejim" : "Tun rejimi"}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+              className="gloss-btn-secondary inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 dark:text-slate-200"
             >
               {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
           </div>
         </div>
 
-        {/* Hairline progress bar */}
-        <div className="h-0.5 w-full bg-slate-100 dark:bg-slate-900">
+        {/* Hairline luminous progress bar */}
+        <div className="h-0.5 w-full bg-slate-200/70 dark:bg-white/5">
           <div
-            className="h-full bg-sky-600 transition-[width] duration-200 dark:bg-sky-400"
+            className="h-full bg-gradient-to-r from-sky-500 to-cyan-400 transition-[width] duration-200 dark:shadow-[0_0_12px_rgba(56,189,248,0.65)]"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
@@ -249,7 +249,7 @@ export function TestRunner({
       {/* Spacious Question & Options Stage */}
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-between px-4 py-6 sm:px-6 sm:py-10">
         <div className="my-auto">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-8 dark:border-slate-800 dark:bg-slate-900">
+          <div className="gloss-panel rounded-2xl p-5 sm:p-8">
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
               <div className="flex items-center gap-3 font-mono-tabular">
                 <span>
@@ -267,8 +267,8 @@ export function TestRunner({
                 aria-pressed={isCurrentFlagged}
                 className={`inline-flex min-h-[34px] items-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 ${
                   isCurrentFlagged
-                    ? 'border-amber-400 bg-amber-50 text-amber-800 dark:border-amber-500 dark:bg-amber-950/50 dark:text-amber-300'
-                    : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400 dark:hover:bg-slate-800'
+                    ? 'border-amber-400 bg-amber-50 text-amber-800 dark:border-amber-400/60 dark:bg-amber-950/50 dark:text-amber-300'
+                    : 'gloss-btn-secondary text-slate-600 dark:text-slate-300'
                 }`}
               >
                 <Bookmark className="h-3.5 w-3.5" />
@@ -278,7 +278,7 @@ export function TestRunner({
 
             <h1
               data-testid="question-prompt"
-              className="mt-4 text-lg font-semibold leading-relaxed text-slate-900 sm:text-xl dark:text-slate-50"
+              className="mt-4 text-lg font-semibold leading-relaxed text-slate-900 sm:text-xl dark:text-white"
             >
               {currentQuestion.prompt}
             </h1>
@@ -298,17 +298,17 @@ export function TestRunner({
                     role="radio"
                     aria-checked={isSelected}
                     onClick={() => selectOption(idx)}
-                    className={`flex min-h-[54px] w-full items-center gap-3.5 rounded-xl border px-4 py-3.5 text-left transition-colors ${
+                    className={`flex min-h-[54px] w-full items-center gap-3.5 rounded-xl border px-4 py-3.5 text-left transition-all duration-150 ${
                       isSelected
-                        ? 'border-sky-600 bg-sky-50 text-slate-900 dark:border-sky-400 dark:bg-sky-950/60 dark:text-slate-50'
-                        : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-200 dark:hover:border-slate-700 dark:hover:bg-slate-800/70'
+                        ? 'border-sky-600 bg-sky-50/90 text-slate-900 shadow-xs dark:border-sky-400/80 dark:bg-[#0c1d38] dark:bg-gradient-to-b dark:from-sky-500/25 dark:to-sky-900/35 dark:text-white dark:shadow-[inset_0_1px_0_rgba(186,230,253,0.32),0_12px_28px_-12px_rgba(56,189,248,0.45)]'
+                        : 'border-slate-200 bg-white/85 text-slate-800 hover:border-sky-300 hover:bg-slate-50 dark:border-white/10 dark:bg-black/35 dark:text-slate-200 dark:hover:border-sky-400/35 dark:hover:bg-white/[0.04]'
                     }`}
                   >
                     <span
-                      className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border font-mono-tabular text-xs font-bold ${
+                      className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border font-mono-tabular text-xs font-bold transition-colors ${
                         isSelected
                           ? 'border-sky-600 bg-sky-600 text-white dark:border-sky-400 dark:bg-sky-400 dark:text-slate-950'
-                          : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400'
+                          : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-white/15 dark:bg-white/5 dark:text-slate-400'
                       }`}
                     >
                       {OPTION_LETTERS[idx]}
@@ -322,7 +322,7 @@ export function TestRunner({
             {submitError && (
               <div
                 role="alert"
-                className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300"
+                className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-500/40 dark:bg-red-950/40 dark:text-red-300"
               >
                 {submitError}
               </div>
@@ -337,7 +337,7 @@ export function TestRunner({
               type="button"
               onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
               disabled={currentIndex === 0 || submitting}
-              className="inline-flex min-h-[46px] items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-45 whitespace-nowrap dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+              className="gloss-btn-secondary inline-flex min-h-[46px] items-center gap-1.5 rounded-xl px-4 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-45 whitespace-nowrap dark:text-slate-200"
             >
               <ArrowLeft className="h-4 w-4" />
               <span>Oldingi</span>
@@ -346,7 +346,7 @@ export function TestRunner({
             <button
               type="button"
               onClick={() => setShowNavDrawer(true)}
-              className="inline-flex min-h-[46px] items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 whitespace-nowrap sm:text-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+              className="gloss-btn-secondary inline-flex min-h-[46px] items-center gap-2 rounded-xl px-3.5 text-xs font-semibold text-slate-700 whitespace-nowrap sm:text-sm dark:text-slate-200"
             >
               <Grid2X2 className="h-4 w-4" />
               <span>
@@ -359,7 +359,7 @@ export function TestRunner({
                 type="button"
                 onClick={() => setCurrentIndex((i) => Math.min(totalCount - 1, i + 1))}
                 disabled={submitting}
-                className="inline-flex min-h-[46px] items-center gap-1.5 rounded-xl bg-sky-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-sky-700 whitespace-nowrap dark:bg-sky-500 dark:text-slate-950 dark:hover:bg-sky-400"
+                className="gloss-btn-primary inline-flex min-h-[46px] items-center gap-1.5 rounded-xl px-5 text-sm font-semibold whitespace-nowrap"
               >
                 <span>Keyingi</span>
                 <ArrowRight className="h-4 w-4" />
@@ -369,7 +369,7 @@ export function TestRunner({
                 type="button"
                 onClick={() => setConfirmSubmit(true)}
                 disabled={submitting}
-                className="inline-flex min-h-[46px] items-center gap-1.5 rounded-xl bg-emerald-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 whitespace-nowrap dark:bg-emerald-500 dark:text-slate-950 dark:hover:bg-emerald-400"
+                className="gloss-btn-emerald inline-flex min-h-[46px] items-center gap-1.5 rounded-xl px-5 text-sm font-semibold whitespace-nowrap"
               >
                 <Check className="h-4 w-4" />
                 <span>Yakunlash</span>
@@ -386,15 +386,15 @@ export function TestRunner({
       {/* Question Navigator Drawer Modal */}
       {showNavDrawer && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/65 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-md"
           role="dialog"
           aria-modal="true"
           aria-label="Savollar xaritasi"
         >
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-xl dark:border-slate-800 dark:bg-slate-900">
+          <div className="gloss-panel w-full max-w-md rounded-2xl p-5">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                <h2 className="text-base font-bold text-slate-900 dark:text-white">
                   Savollar ({answeredCount}/{totalCount} javob berilgan)
                 </h2>
                 {flaggedIds.size > 0 && (
@@ -407,7 +407,7 @@ export function TestRunner({
                 type="button"
                 onClick={() => setShowNavDrawer(false)}
                 aria-label="Savollar xaritasini yopish"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/10"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -428,12 +428,12 @@ export function TestRunner({
                     }}
                     className={`relative min-h-[42px] rounded-lg border font-mono-tabular text-xs font-bold transition-colors ${
                       isCurrent
-                        ? 'border-sky-600 bg-sky-600 text-white dark:border-sky-400 dark:bg-sky-400 dark:text-slate-950'
+                        ? 'gloss-btn-primary border-sky-400 text-white'
                         : isFlagged
-                          ? 'border-amber-400 bg-amber-50 text-amber-900 dark:border-amber-500 dark:bg-amber-950/60 dark:text-amber-200'
+                          ? 'border-amber-400 bg-amber-50 text-amber-900 dark:border-amber-400/60 dark:bg-amber-950/50 dark:text-amber-200'
                           : isAnswered
-                            ? 'border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-800 dark:bg-sky-950/60 dark:text-sky-300'
-                            : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400 dark:hover:bg-slate-800'
+                            ? 'border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-400/40 dark:bg-sky-500/15 dark:text-sky-300'
+                            : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 dark:border-white/10 dark:bg-black/40 dark:text-slate-400 dark:hover:bg-white/10'
                     }`}
                   >
                     {idx + 1}
@@ -445,7 +445,7 @@ export function TestRunner({
               })}
             </div>
 
-            <div className="mt-5 flex items-center justify-between gap-2 border-t border-slate-200 pt-4 dark:border-slate-800">
+            <div className="mt-5 flex items-center justify-between gap-2 border-t border-slate-200/80 pt-4 dark:border-white/10">
               <span className="text-[11px] text-slate-500 dark:text-slate-400">
                 Sariq — belgilangan · Koʻk — javob berilgan
               </span>
@@ -455,7 +455,7 @@ export function TestRunner({
                   setShowNavDrawer(false);
                   setConfirmSubmit(true);
                 }}
-                className="min-h-[42px] rounded-xl bg-emerald-600 px-4 text-xs font-semibold text-white hover:bg-emerald-700 whitespace-nowrap dark:bg-emerald-500 dark:text-slate-950"
+                className="gloss-btn-emerald min-h-[42px] rounded-xl px-4 text-xs font-semibold whitespace-nowrap"
               >
                 Testni yakunlash
               </button>
@@ -467,18 +467,18 @@ export function TestRunner({
       {/* Submit Confirmation Modal */}
       {confirmSubmit && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/65 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-md"
           role="dialog"
           aria-modal="true"
           aria-label="Testni yakunlashni tasdiqlash"
         >
-          <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
-            <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+          <div className="gloss-panel w-full max-w-sm rounded-2xl p-6">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">
               Testni yakunlaysizmi?
             </h2>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
               Siz {totalCount} ta savoldan{' '}
-              <strong className="font-mono-tabular text-slate-900 dark:text-slate-100">
+              <strong className="font-mono-tabular text-slate-900 dark:text-white">
                 {answeredCount}
               </strong>{' '}
               tasiga javob belgiladingiz.
@@ -495,7 +495,7 @@ export function TestRunner({
                 type="button"
                 onClick={() => setConfirmSubmit(false)}
                 disabled={submitting}
-                className="min-h-[42px] rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                className="gloss-btn-secondary min-h-[42px] rounded-xl px-4 text-sm font-semibold text-slate-700 dark:text-slate-200"
               >
                 Qaytish
               </button>
@@ -506,7 +506,7 @@ export function TestRunner({
                   void executeSubmit();
                 }}
                 disabled={submitting}
-                className="min-h-[42px] rounded-xl bg-emerald-600 px-5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60 dark:bg-emerald-500 dark:text-slate-950"
+                className="gloss-btn-emerald min-h-[42px] rounded-xl px-5 text-sm font-semibold disabled:opacity-60"
               >
                 {submitting ? 'Saqlanmoqda...' : 'Natijani koʻrish'}
               </button>
@@ -518,26 +518,26 @@ export function TestRunner({
       {/* Cancel / Exit Confirmation Modal */}
       {confirmExit && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/65 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-md"
           role="dialog"
           aria-modal="true"
           aria-label="Testdan chiqishni tasdiqlash"
         >
-          <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
+          <div className="gloss-panel w-full max-w-sm rounded-2xl p-6">
             <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
               <AlertTriangle className="h-5 w-5" />
-              <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
                 Testni bekor qilasizmi?
               </h2>
             </div>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
               Hozir chiqsangiz, ushbu testdagi belgilangan javoblar saqlanmaydi.
             </p>
             <div className="mt-6 flex items-center justify-end gap-2.5">
               <button
                 type="button"
                 onClick={() => setConfirmExit(false)}
-                className="min-h-[42px] rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                className="gloss-btn-secondary min-h-[42px] rounded-xl px-4 text-sm font-semibold text-slate-700 dark:text-slate-200"
               >
                 Davom etish
               </button>
@@ -547,7 +547,7 @@ export function TestRunner({
                   exitingLegitRef.current = true;
                   onCancelTest();
                 }}
-                className="min-h-[42px] rounded-xl bg-red-600 px-4 text-sm font-semibold text-white hover:bg-red-700"
+                className="min-h-[42px] rounded-xl border border-red-400/40 bg-gradient-to-b from-red-500 to-red-700 px-4 text-sm font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)] hover:brightness-110"
               >
                 Chiqish
               </button>

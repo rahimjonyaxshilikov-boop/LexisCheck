@@ -65,14 +65,27 @@ export function ProgressLineChart({
   });
 
   const polyline = coords.map((c) => `${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ');
+  const areaPath =
+    coords.length >= 2
+      ? `M ${coords[0].x.toFixed(1)},${(padTop + chartH).toFixed(1)} ` +
+        coords.map((c) => `L ${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ') +
+        ` L ${coords[coords.length - 1].x.toFixed(1)},${(padTop + chartH).toFixed(1)} Z`
+      : '';
 
   return (
     <svg
       viewBox={`0 0 ${width} ${height}`}
-      className="h-[148px] min-w-full"
+      className="h-[154px] min-w-full"
       role="img"
       aria-label="Test natijalari o'sish va tushish grafigi"
     >
+      <defs>
+        <linearGradient id="lexisChartFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.28" />
+          <stop offset="100%" stopColor="#38bdf8" stopOpacity="0.01" />
+        </linearGradient>
+      </defs>
+
       {[0, 50, 100].map((val) => {
         const gy = padTop + chartH - (val / 100) * chartH;
         return (
@@ -83,20 +96,22 @@ export function ProgressLineChart({
               x2={width - padRight}
               y2={gy}
               stroke="currentColor"
-              className="text-slate-200 dark:text-slate-800"
+              className="text-slate-200 dark:text-white/10"
               strokeDasharray="3 3"
             />
             <text
               x={padLeft - 6}
               y={gy + 3}
               textAnchor="end"
-              className="fill-slate-400 text-[10px] font-mono"
+              className="fill-slate-400 text-[10px] font-mono dark:fill-slate-500"
             >
               {val}%
             </text>
           </g>
         );
       })}
+
+      {areaPath && <path d={areaPath} fill="url(#lexisChartFill)" />}
 
       <polyline
         fill="none"
@@ -111,19 +126,20 @@ export function ProgressLineChart({
       {coords.map(({ x, y, item }) => {
         const dotColor =
           item.overallTrend === 'up'
-            ? 'fill-emerald-600 dark:fill-emerald-400'
+            ? 'fill-emerald-500 dark:fill-emerald-400'
             : item.overallTrend === 'down'
-              ? 'fill-red-600 dark:fill-red-400'
-              : 'fill-sky-600 dark:fill-sky-400';
+              ? 'fill-red-500 dark:fill-red-400'
+              : 'fill-sky-500 dark:fill-sky-400';
 
         return (
           <g key={item.attempt.id}>
-            <circle cx={x} cy={y} r="4.5" className={dotColor} />
+            <circle cx={x} cy={y} r="7" className="fill-sky-400/15" />
+            <circle cx={x} cy={y} r="4" className={dotColor} />
             <text
               x={x}
               y={Math.max(11, y - 9)}
               textAnchor="middle"
-              className="fill-slate-700 text-[10px] font-semibold font-mono dark:fill-slate-200"
+              className="fill-slate-700 text-[10px] font-semibold font-mono dark:fill-slate-100"
             >
               {item.attempt.percentage}%
             </text>

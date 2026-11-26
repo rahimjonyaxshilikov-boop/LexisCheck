@@ -36,10 +36,10 @@ export function CheaterLockScreen({ onUnlock }: CheaterLockScreenProps) {
       role="alertdialog"
       aria-modal="true"
       aria-labelledby="cheater-heading"
-      className="fixed inset-0 z-50 flex min-h-screen items-center justify-center bg-slate-950 p-6 text-slate-100"
+      className="fixed inset-0 z-50 flex min-h-screen items-center justify-center bg-[#05060b] bg-[radial-gradient(ellipse_65%_45%_at_50%_14%,rgba(239,68,68,0.22),transparent_65%)] p-6 text-slate-100"
     >
-      <div className="w-full max-w-lg rounded-2xl border border-red-900/70 bg-slate-900 p-7 text-center shadow-2xl sm:p-10">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-red-800/80 bg-red-950/70 text-red-400">
+      <div className="w-full max-w-lg rounded-2xl border border-red-500/35 bg-gradient-to-b from-[#17121c]/95 to-[#0b0d14]/95 p-7 text-center shadow-[inset_0_1px_0_rgba(254,202,202,0.18),0_28px_60px_-20px_rgba(0,0,0,0.92)] backdrop-blur-2xl sm:p-10">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-red-500/40 bg-red-950/60 text-red-400 shadow-[inset_0_1px_0_rgba(254,202,202,0.2),0_10px_25px_-8px_rgba(239,68,68,0.45)]">
           <ShieldAlert className="h-8 w-8" />
         </div>
 
@@ -77,13 +77,13 @@ export function CheaterLockScreen({ onUnlock }: CheaterLockScreenProps) {
                   if (error) setError(null);
                 }}
                 placeholder="Kodni kiriting"
-                className="block min-h-[48px] w-full rounded-xl border border-slate-700 bg-slate-950 pr-12 pl-4 font-mono-tabular text-base text-white placeholder:text-slate-500 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/25"
+                className="block min-h-[48px] w-full rounded-xl border border-white/15 bg-black/65 pr-12 pl-4 font-mono-tabular text-base text-white placeholder:text-slate-500 shadow-[inset_0_2px_6px_rgba(0,0,0,0.7)] focus:border-red-500/80 focus:outline-none focus:ring-2 focus:ring-red-500/25"
               />
               <button
                 type="button"
                 onClick={() => setShowCode((v) => !v)}
                 aria-label={showCode ? 'Kodni yashirish' : 'Kodni koʻrsatish'}
-                className="absolute top-1/2 right-2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                className="absolute top-1/2 right-2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-slate-200"
               >
                 {showCode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -93,7 +93,7 @@ export function CheaterLockScreen({ onUnlock }: CheaterLockScreenProps) {
           {error && (
             <div
               role="alert"
-              className="rounded-xl border border-red-800/70 bg-red-950/60 p-3 text-xs font-medium text-red-300"
+              className="rounded-xl border border-red-500/40 bg-red-950/60 p-3 text-xs font-medium text-red-300"
             >
               {error}
             </div>
@@ -102,7 +102,7 @@ export function CheaterLockScreen({ onUnlock }: CheaterLockScreenProps) {
           <button
             type="submit"
             disabled={verifying}
-            className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-red-500 disabled:opacity-60"
+            className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl border border-red-400/40 bg-gradient-to-b from-red-500 to-red-700 px-5 text-sm font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.38),0_12px_26px_-8px_rgba(220,38,38,0.6)] transition-all hover:brightness-110 disabled:opacity-60"
           >
             <Unlock className="h-4 w-4" />
             <span>{verifying ? 'Tekshirilmoqda...' : 'Ochish'}</span>

@@ -97,7 +97,7 @@ export function StudentProfile({
         <button
           type="button"
           onClick={onBackToUnits}
-          className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+          className="gloss-btn-secondary inline-flex min-h-[40px] items-center gap-1.5 rounded-xl px-3.5 text-xs font-semibold text-slate-700 dark:text-slate-200"
         >
           <ArrowLeft className="h-4 w-4" />
           <span>Unitlarga qaytish</span>
@@ -106,7 +106,7 @@ export function StudentProfile({
         <button
           type="button"
           onClick={onBackToUnits}
-          className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl bg-sky-600 px-4 text-xs font-semibold text-white transition-colors hover:bg-sky-700 dark:bg-sky-500 dark:text-slate-950 dark:hover:bg-sky-400"
+          className="gloss-btn-primary inline-flex min-h-[40px] items-center gap-1.5 rounded-xl px-4 text-xs font-semibold"
         >
           <Play className="h-3.5 w-3.5" />
           <span>Test ishlash</span>
@@ -117,7 +117,7 @@ export function StudentProfile({
         <div
           data-testid="profile-welcome-back"
           role="status"
-          className="mb-5 flex items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-200"
+          className="mb-5 flex items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/90 p-4 text-sm text-emerald-950 dark:border-emerald-500/35 dark:bg-emerald-950/35 dark:text-emerald-200"
         >
           <div className="flex items-center gap-3">
             <UserCheck className="h-5 w-5 shrink-0 text-emerald-700 dark:text-emerald-400" />
@@ -133,7 +133,7 @@ export function StudentProfile({
               type="button"
               onClick={onDismissWelcomeBack}
               aria-label="Xabarni yopish"
-              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-emerald-700 hover:bg-emerald-100 dark:text-emerald-300 dark:hover:bg-emerald-900/50"
+              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-emerald-700 hover:bg-emerald-100 dark:text-emerald-300 dark:hover:bg-white/10"
             >
               <X className="h-4 w-4" />
             </button>
@@ -142,18 +142,18 @@ export function StudentProfile({
       )}
 
       {/* Profile Summary */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 dark:border-slate-800 dark:bg-slate-900">
+      <section className="gloss-panel rounded-2xl p-6 sm:p-8">
         <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-center">
           <div>
             <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
               Shaxsiy profil · {student.className} sinf
             </div>
-            <h1 className="font-display mt-1 text-2xl font-bold text-slate-900 sm:text-3xl dark:text-slate-50">
+            <h1 className="font-display mt-1 text-2xl font-bold text-slate-900 sm:text-3xl dark:text-white">
               {student.fullName}
             </h1>
           </div>
 
-          <div className="grid grid-cols-3 gap-5 border-t border-slate-200 pt-4 sm:border-t-0 sm:pt-0 sm:text-right dark:border-slate-800">
+          <div className="grid grid-cols-3 gap-5 border-t border-slate-200/80 pt-4 sm:border-t-0 sm:pt-0 sm:text-right dark:border-white/10">
             <div>
               <div className="font-mono-tabular text-2xl font-bold text-sky-700 dark:text-sky-400">
                 {student.totalPoints}
@@ -161,13 +161,13 @@ export function StudentProfile({
               <div className="text-xs text-slate-500 dark:text-slate-400">Umumiy ball</div>
             </div>
             <div>
-              <div className="font-mono-tabular text-2xl font-bold text-slate-900 dark:text-slate-100">
+              <div className="font-mono-tabular text-2xl font-bold text-slate-900 dark:text-white">
                 {student.completedUnits.length}/{TOTAL_UNITS}
               </div>
               <div className="text-xs text-slate-500 dark:text-slate-400">Unitlar</div>
             </div>
             <div>
-              <div className="font-mono-tabular text-2xl font-bold text-slate-900 dark:text-slate-100">
+              <div className="font-mono-tabular text-2xl font-bold text-slate-900 dark:text-white">
                 {student.averagePercentage}%
               </div>
               <div className="text-xs text-slate-500 dark:text-slate-400">Oʻrtacha</div>
@@ -176,9 +176,9 @@ export function StudentProfile({
         </div>
 
         {/* Mastery Rank Progress Strip */}
-        <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50/80 p-3.5 dark:border-slate-800 dark:bg-slate-950/70">
+        <div className="mt-5 rounded-xl border border-slate-200/80 bg-slate-50/80 p-3.5 dark:border-white/10 dark:bg-black/35">
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-            <span className="inline-flex items-center gap-1.5 font-semibold text-slate-800 dark:text-slate-200">
+            <span className="inline-flex items-center gap-1.5 font-semibold text-slate-800 dark:text-slate-100">
               <Sparkles className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
               <span>
                 Daraja {masteryRank.level}: {masteryRank.title}
@@ -190,9 +190,9 @@ export function StudentProfile({
                 : 'Eng yuqori daraja zabt etildi!'}
             </span>
           </div>
-          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
             <div
-              className="h-full rounded-full bg-sky-600 transition-[width] duration-300 dark:bg-sky-400"
+              className="h-full rounded-full bg-gradient-to-r from-sky-500 to-cyan-400 transition-[width] duration-300 dark:shadow-[0_0_12px_rgba(56,189,248,0.5)]"
               style={{ width: `${masteryRank.progressPercent}%` }}
             />
           </div>
@@ -200,21 +200,21 @@ export function StudentProfile({
 
         {/* Personal Growth KPIs + Chart */}
         {student.attempts.length > 0 && (
-          <div className="mt-6 space-y-5 border-t border-slate-200 pt-6 dark:border-slate-800">
+          <div className="mt-6 space-y-5 border-t border-slate-200/80 pt-6 dark:border-white/10">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-3.5 dark:border-emerald-900/50 dark:bg-emerald-950/20">
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-3.5 dark:border-emerald-500/30 dark:bg-emerald-950/25">
                 <div className="text-xs text-emerald-800 dark:text-emerald-300">Eng yuqori</div>
                 <div className="font-mono-tabular mt-1 text-xl font-bold text-emerald-900 dark:text-emerald-200">
                   {analytics.bestAttempt?.percentage ?? 0}%
                 </div>
               </div>
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5 dark:border-slate-800 dark:bg-slate-950">
+              <div className="rounded-xl border border-slate-200 bg-slate-50/90 p-3.5 dark:border-white/10 dark:bg-black/35">
                 <div className="text-xs text-slate-500 dark:text-slate-400">Eng past</div>
-                <div className="font-mono-tabular mt-1 text-xl font-bold text-slate-900 dark:text-slate-100">
+                <div className="font-mono-tabular mt-1 text-xl font-bold text-slate-900 dark:text-white">
                   {analytics.worstAttempt?.percentage ?? 0}%
                 </div>
               </div>
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5 dark:border-slate-800 dark:bg-slate-950">
+              <div className="rounded-xl border border-slate-200 bg-slate-50/90 p-3.5 dark:border-white/10 dark:bg-black/35">
                 <div className="text-xs text-slate-500 dark:text-slate-400">Oʻsish / Tushish</div>
                 <div className="mt-1 font-mono-tabular text-base font-bold">
                   <TrendBadge
@@ -224,9 +224,9 @@ export function StudentProfile({
                   />
                 </div>
               </div>
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5 dark:border-slate-800 dark:bg-slate-950">
+              <div className="rounded-xl border border-slate-200 bg-slate-50/90 p-3.5 dark:border-white/10 dark:bg-black/35">
                 <div className="text-xs text-slate-500 dark:text-slate-400">Jami toʻgʻri / xato</div>
-                <div className="font-mono-tabular mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">
+                <div className="font-mono-tabular mt-1 text-lg font-bold text-slate-900 dark:text-white">
                   <span className="text-emerald-700 dark:text-emerald-400">
                     {analytics.totalCorrect}
                   </span>
@@ -239,7 +239,7 @@ export function StudentProfile({
             </div>
 
             {analytics.chronological.length >= 2 && (
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-950">
+              <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-white/10 dark:bg-black/35">
                 <div className="mb-2 flex items-center justify-between text-xs font-semibold text-slate-600 dark:text-slate-400">
                   <span>Natijalaringiz oʻsishi va tushishi ({analytics.totalAttempts} ta test)</span>
                 </div>
@@ -256,7 +256,7 @@ export function StudentProfile({
       <section className="mt-8">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <div
-            className="inline-flex rounded-xl border border-slate-200 bg-slate-100 p-1 dark:border-slate-800 dark:bg-slate-900"
+            className="inline-flex rounded-xl border border-slate-200 bg-slate-200/70 p-1 dark:border-white/10 dark:bg-black/45"
             role="tablist"
             aria-label="Profil bo'limlari"
           >
@@ -267,7 +267,7 @@ export function StudentProfile({
               onClick={() => setActiveTab('history')}
               className={`min-h-[36px] rounded-lg px-3.5 text-xs font-semibold whitespace-nowrap transition-colors ${
                 activeTab === 'history'
-                  ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-800 dark:text-slate-100'
+                  ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-800/90 dark:text-white dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]'
                   : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
               }`}
             >
@@ -280,7 +280,7 @@ export function StudentProfile({
               onClick={() => setActiveTab('mistakes')}
               className={`min-h-[36px] rounded-lg px-3.5 text-xs font-semibold whitespace-nowrap transition-colors ${
                 activeTab === 'mistakes'
-                  ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-800 dark:text-slate-100'
+                  ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-800/90 dark:text-white dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]'
                   : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
               }`}
             >
@@ -296,7 +296,7 @@ export function StudentProfile({
 
         {activeTab === 'history' ? (
           analytics.newestFirst.length === 0 ? (
-            <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-10 text-center dark:border-slate-800 dark:bg-slate-900">
+            <div className="gloss-panel mt-4 rounded-2xl p-10 text-center">
               <p className="text-sm text-slate-600 dark:text-slate-400">
                 Siz hali birorta ham unit testini topshirmagansiz. Unitlar menyusidan boshlang!
               </p>
@@ -316,7 +316,7 @@ export function StudentProfile({
                   <article
                     key={attempt.id}
                     data-testid={`history-attempt-${attempt.unitNumber}`}
-                    className="flex flex-col justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-5 sm:flex-row sm:items-center dark:border-slate-800 dark:bg-slate-900"
+                    className="gloss-card flex flex-col justify-between gap-4 rounded-2xl p-5 sm:flex-row sm:items-center"
                   >
                     <div>
                       <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
@@ -330,7 +330,7 @@ export function StudentProfile({
                           Vaqt: {formatCountdown(attempt.durationSeconds)}
                         </span>
                       </div>
-                      <h3 className="mt-1 text-base font-bold text-slate-900 dark:text-slate-100">
+                      <h3 className="mt-1 text-base font-bold text-slate-900 dark:text-white">
                         {attempt.unitTitle}
                       </h3>
                       <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs font-medium tabular-nums">
@@ -352,13 +352,13 @@ export function StudentProfile({
                     </div>
 
                     <div className="flex items-center justify-between gap-4 sm:justify-end">
-                      <span className="font-mono-tabular text-xl font-bold text-slate-900 dark:text-slate-100">
+                      <span className="font-mono-tabular text-xl font-bold text-slate-900 dark:text-white">
                         {attempt.percentage}%
                       </span>
                       <button
                         type="button"
                         onClick={() => onInspectAttempt(attempt)}
-                        className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 whitespace-nowrap dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-800"
+                        className="gloss-btn-secondary inline-flex min-h-[40px] items-center gap-1.5 rounded-xl px-3.5 text-xs font-semibold text-slate-700 whitespace-nowrap dark:text-slate-200"
                       >
                         <Eye className="h-3.5 w-3.5" />
                         <span>Xatolarni koʻrish</span>
@@ -370,7 +370,7 @@ export function StudentProfile({
             </div>
           )
         ) : mistakeBank.length === 0 ? (
-          <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-10 text-center dark:border-slate-800 dark:bg-slate-900">
+          <div className="gloss-panel mt-4 rounded-2xl p-10 text-center">
             <BookCheck className="mx-auto h-8 w-8 text-emerald-600 dark:text-emerald-400" />
             <p className="mt-2 text-sm font-medium text-slate-700 dark:text-slate-300">
               Hozircha xato qilingan savollar yoʻq. Ajoyib!
@@ -380,9 +380,9 @@ export function StudentProfile({
           <div className="mt-4 space-y-4">
             {/* Smart Mistake Flash Practice Card */}
             {!drillOpen ? (
-              <div className="flex flex-col justify-between gap-3 rounded-2xl border border-sky-200 bg-sky-50/70 p-4 sm:flex-row sm:items-center dark:border-sky-900/60 dark:bg-sky-950/30">
+              <div className="gloss-panel flex flex-col justify-between gap-3 rounded-2xl border-sky-300/60 p-4 sm:flex-row sm:items-center dark:border-sky-400/30">
                 <div>
-                  <div className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                  <div className="text-sm font-bold text-slate-900 dark:text-white">
                     Xatolar ustida tezkor mashq
                   </div>
                   <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">
@@ -392,14 +392,14 @@ export function StudentProfile({
                 <button
                   type="button"
                   onClick={startMistakeDrill}
-                  className="inline-flex min-h-[38px] shrink-0 items-center gap-1.5 rounded-xl bg-sky-600 px-4 text-xs font-semibold text-white hover:bg-sky-700 dark:bg-sky-500 dark:text-slate-950"
+                  className="gloss-btn-primary inline-flex min-h-[38px] shrink-0 items-center gap-1.5 rounded-xl px-4 text-xs font-semibold"
                 >
                   <Sparkles className="h-3.5 w-3.5" />
                   <span>Mashqni boshlash</span>
                 </button>
               </div>
             ) : activeDrillItem ? (
-              <div className="rounded-2xl border border-sky-200 bg-white p-5 shadow-xs dark:border-sky-900/60 dark:bg-slate-900">
+              <div className="gloss-panel rounded-2xl border-sky-300/60 p-5 dark:border-sky-400/35">
                 <div className="flex items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
                   <span className="font-mono-tabular font-semibold text-sky-700 dark:text-sky-400">
                     Mashq {drillIdx + 1}/{mistakeBank.length} · Unit {activeDrillItem.unitNumber}
@@ -412,7 +412,7 @@ export function StudentProfile({
                     Yopish
                   </button>
                 </div>
-                <p className="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">
+                <p className="mt-2 text-base font-semibold text-slate-900 dark:text-white">
                   {activeDrillItem.prompt}
                 </p>
                 <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -432,11 +432,11 @@ export function StudentProfile({
                         className={`min-h-[42px] rounded-xl border px-3.5 py-2 text-left text-sm font-medium transition-colors ${
                           answered
                             ? isRight
-                              ? 'border-emerald-500 bg-emerald-50 text-emerald-900 dark:border-emerald-500 dark:bg-emerald-950/40 dark:text-emerald-200'
+                              ? 'border-emerald-500 bg-emerald-50 text-emerald-900 dark:border-emerald-400/70 dark:bg-emerald-950/40 dark:text-emerald-200'
                               : chosen
-                                ? 'border-red-400 bg-red-50 text-red-900 dark:border-red-500 dark:bg-red-950/40 dark:text-red-200'
-                                : 'border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400'
-                            : 'border-slate-200 bg-slate-50 text-slate-800 hover:border-sky-400 hover:bg-sky-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-800'
+                                ? 'border-red-400 bg-red-50 text-red-900 dark:border-red-400/70 dark:bg-red-950/40 dark:text-red-200'
+                                : 'border-slate-200 bg-slate-50 text-slate-500 dark:border-white/10 dark:bg-black/40 dark:text-slate-500'
+                            : 'border-slate-200 bg-slate-50 text-slate-800 hover:border-sky-400 hover:bg-sky-50 dark:border-white/10 dark:bg-black/35 dark:text-slate-200 dark:hover:border-sky-400/40 dark:hover:bg-white/[0.04]'
                         }`}
                       >
                         {opt}
@@ -445,7 +445,7 @@ export function StudentProfile({
                   })}
                 </div>
                 {drillSelectedOpt !== null && (
-                  <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3 dark:border-slate-800">
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200/80 pt-3 dark:border-white/10">
                     <span className="text-xs text-slate-600 dark:text-slate-400">
                       {activeDrillItem.explanation}
                     </span>
@@ -456,7 +456,7 @@ export function StudentProfile({
                           setDrillIdx((i) => i + 1);
                           setDrillSelectedOpt(null);
                         }}
-                        className="min-h-[36px] rounded-lg bg-sky-600 px-3.5 text-xs font-semibold text-white hover:bg-sky-700 dark:bg-sky-500 dark:text-slate-950"
+                        className="gloss-btn-primary min-h-[36px] rounded-lg px-3.5 text-xs font-semibold"
                       >
                         Keyingi savol
                       </button>
@@ -472,71 +472,71 @@ export function StudentProfile({
 
             <div className="space-y-3">
               {mistakeBank.map((item) => {
-              const isRevealed = revealedIds.has(item.questionId);
-              return (
-                <article
-                  key={item.questionId}
-                  className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono-tabular font-semibold text-sky-700 dark:text-sky-400">
-                        Unit {item.unitNumber}: {item.unitTitle}
-                      </span>
-                      <span aria-hidden="true">·</span>
-                      <span className="font-mono-tabular font-semibold text-red-700 dark:text-red-400">
-                        {item.missCount} marta xato
-                      </span>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => onRetakeUnit(item.unitNumber)}
-                      className="inline-flex items-center gap-1 font-semibold text-sky-700 hover:underline dark:text-sky-400"
-                    >
-                      <RotateCcw className="h-3 w-3" />
-                      <span>Unit {item.unitNumber} ni qayta ishlash</span>
-                    </button>
-                  </div>
-
-                  <h3 className="mt-2 text-base font-semibold leading-relaxed text-slate-900 dark:text-slate-100">
-                    {item.prompt}
-                  </h3>
-
-                  <div className="mt-3 flex flex-wrap items-center gap-2.5">
-                    <button
-                      type="button"
-                      onClick={() => toggleReveal(item.questionId)}
-                      className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-xs font-semibold text-slate-800 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:hover:bg-slate-800"
-                    >
-                      {isRevealed ? (
-                        <>
-                          <EyeOff className="h-3.5 w-3.5" />
-                          <span>Javobni yashirish</span>
-                        </>
-                      ) : (
-                        <>
-                          <Eye className="h-3.5 w-3.5" />
-                          <span>Toʻgʻri javobni koʻrish</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-
-                  {isRevealed && (
-                    <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50/70 p-3.5 text-sm dark:border-emerald-900/60 dark:bg-emerald-950/30">
-                      <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                        <span>Toʻgʻri javob: {item.correctAnswer}</span>
+                const isRevealed = revealedIds.has(item.questionId);
+                return (
+                  <article
+                    key={item.questionId}
+                    className="gloss-panel rounded-2xl p-5"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono-tabular font-semibold text-sky-700 dark:text-sky-400">
+                          Unit {item.unitNumber}: {item.unitTitle}
+                        </span>
+                        <span aria-hidden="true">·</span>
+                        <span className="font-mono-tabular font-semibold text-red-700 dark:text-red-400">
+                          {item.missCount} marta xato
+                        </span>
                       </div>
-                      <p className="mt-1 text-xs leading-relaxed text-slate-700 dark:text-slate-300">
-                        {item.explanation}
-                      </p>
+
+                      <button
+                        type="button"
+                        onClick={() => onRetakeUnit(item.unitNumber)}
+                        className="inline-flex items-center gap-1 font-semibold text-sky-700 hover:underline dark:text-sky-400"
+                      >
+                        <RotateCcw className="h-3 w-3" />
+                        <span>Unit {item.unitNumber} ni qayta ishlash</span>
+                      </button>
                     </div>
-                  )}
-                </article>
-              );
-            })}
+
+                    <h3 className="mt-2 text-base font-semibold leading-relaxed text-slate-900 dark:text-white">
+                      {item.prompt}
+                    </h3>
+
+                    <div className="mt-3 flex flex-wrap items-center gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => toggleReveal(item.questionId)}
+                        className="gloss-btn-secondary inline-flex min-h-[38px] items-center gap-1.5 rounded-xl px-3.5 text-xs font-semibold text-slate-800 dark:text-slate-100"
+                      >
+                        {isRevealed ? (
+                          <>
+                            <EyeOff className="h-3.5 w-3.5" />
+                            <span>Javobni yashirish</span>
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="h-3.5 w-3.5" />
+                            <span>Toʻgʻri javobni koʻrish</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {isRevealed && (
+                      <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50/70 p-3.5 text-sm dark:border-emerald-500/35 dark:bg-emerald-950/30">
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          <span>Toʻgʻri javob: {item.correctAnswer}</span>
+                        </div>
+                        <p className="mt-1 text-xs leading-relaxed text-slate-700 dark:text-slate-300">
+                          {item.explanation}
+                        </p>
+                      </div>
+                    )}
+                  </article>
+                );
+              })}
             </div>
           </div>
         )}

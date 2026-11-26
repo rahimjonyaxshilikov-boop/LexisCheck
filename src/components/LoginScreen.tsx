@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { AlertTriangle, ArrowRight, BookOpen, Lock, Sparkles, UserCheck } from 'lucide-react';
+import heroObsidianImg from '../assets/images/hero_obsidian_lexicon_1795704967281.jpg';
 import {
   lookupStudentProfile,
   StudentEntryError,
@@ -32,6 +33,7 @@ export function LoginScreen({
   const [suggestedFixName, setSuggestedFixName] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [lookupMatch, setLookupMatch] = useState<StudentLookupResult | null>(null);
+  const [heroImgFailed, setHeroImgFailed] = useState(false);
 
   const selectedClass = `${selectedGrade}-${selectedSection}`;
 
@@ -144,62 +146,84 @@ export function LoginScreen({
   );
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 items-center px-4 py-8 sm:px-6 sm:py-12">
-      <div className="grid w-full items-stretch gap-8 lg:grid-cols-12">
-        {/* Left editorial overview */}
-        <section className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 lg:col-span-6 dark:border-slate-800 dark:bg-slate-900">
-          <div className="space-y-5">
-            <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
-              <BookOpen className="h-4 w-4 text-sky-600 dark:text-sky-400" />
-              <span>English Vocabulary in Use</span>
-              <span aria-hidden="true">·</span>
-              <span>Upper-Intermediate</span>
-              <span aria-hidden="true">·</span>
-              <span>1–{TOTAL_UNITS}-unitlar</span>
-            </div>
-
-            <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl [text-wrap:balance] dark:text-slate-50">
-              Lugʻat bilimini aniq va adolatli tekshirish tizimi
-            </h1>
-
-            <p className="text-base leading-relaxed text-slate-600 dark:text-slate-300">
-              Har bir unit boʻyicha kamida 30 ta takrorlanmas test savoli, {testDurationMinutes} daqiqalik taymer va
-              umumiy ballar tizimi. Savollar har bir oʻquvchiga turlicha tartibda tushadi.
-            </p>
+    <main className="mx-auto flex w-full max-w-5xl flex-1 items-center px-4 py-8 sm:px-6 sm:py-10">
+      <div className="grid w-full items-stretch gap-6 lg:grid-cols-12">
+        {/* Left editorial overview with bespoke obsidian glass showcase */}
+        <section className="gloss-panel flex flex-col justify-between overflow-hidden rounded-2xl lg:col-span-6">
+          <div className="relative h-48 w-full overflow-hidden border-b border-slate-200/80 sm:h-56 dark:border-white/10">
+            {!heroImgFailed ? (
+              <img
+                src={heroObsidianImg}
+                alt="English Vocabulary in Use — LexisCheck lugʻat platformasi"
+                referrerPolicy="no-referrer"
+                onError={() => setHeroImgFailed(true)}
+                className="h-full w-full object-cover object-center"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-900 via-[#0d172a] to-sky-950">
+                <BookOpen className="h-12 w-12 text-sky-400/80" />
+              </div>
+            )}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 bg-gradient-to-t from-white via-white/30 to-transparent dark:from-[#0e1320] dark:via-[#0e1320]/45 dark:to-transparent"
+            />
           </div>
 
-          <div className="mt-8 grid grid-cols-3 gap-4 border-t border-slate-200 pt-6 dark:border-slate-800">
-            <div>
-              <div className="font-mono-tabular text-2xl font-semibold text-slate-900 dark:text-slate-100">
-                {TOTAL_UNITS}
+          <div className="flex flex-1 flex-col justify-between p-6 sm:p-8">
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-400">
+                <BookOpen className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                <span>English Vocabulary in Use</span>
+                <span aria-hidden="true">·</span>
+                <span>Upper-Intermediate</span>
+                <span aria-hidden="true">·</span>
+                <span>1–{TOTAL_UNITS}-unitlar</span>
               </div>
-              <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                Oʻquv uniti
-              </div>
+
+              <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl [text-wrap:balance] dark:text-white">
+                Lugʻat bilimini aniq va adolatli tekshirish tizimi
+              </h1>
+
+              <p className="text-sm leading-relaxed text-slate-600 sm:text-base dark:text-slate-300">
+                Har bir unit boʻyicha kamida 30 ta takrorlanmas test savoli, {testDurationMinutes} daqiqalik taymer va
+                umumiy ballar tizimi. Savollar har bir oʻquvchiga turlicha tartibda tushadi.
+              </p>
             </div>
-            <div>
-              <div className="font-mono-tabular text-2xl font-semibold text-slate-900 dark:text-slate-100">
-                30+
+
+            <div className="mt-7 grid grid-cols-3 gap-4 border-t border-slate-200/80 pt-5 dark:border-white/10">
+              <div>
+                <div className="font-mono-tabular text-2xl font-bold text-slate-900 dark:text-white">
+                  {TOTAL_UNITS}
+                </div>
+                <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                  Oʻquv uniti
+                </div>
               </div>
-              <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                Savol / unit
+              <div>
+                <div className="font-mono-tabular text-2xl font-bold text-sky-600 dark:text-sky-400">
+                  30+
+                </div>
+                <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                  Savol / unit
+                </div>
               </div>
-            </div>
-            <div>
-              <div className="font-mono-tabular text-2xl font-semibold text-slate-900 dark:text-slate-100">
-                {formatCountdown(testDurationMinutes * 60)}
-              </div>
-              <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                Vaqt chegarasi
+              <div>
+                <div className="font-mono-tabular text-2xl font-bold text-slate-900 dark:text-white">
+                  {formatCountdown(testDurationMinutes * 60)}
+                </div>
+                <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                  Vaqt chegarasi
+                </div>
               </div>
             </div>
           </div>
         </section>
 
         {/* Right student entry form */}
-        <section className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 lg:col-span-6 dark:border-slate-800 dark:bg-slate-900">
+        <section className="gloss-panel flex flex-col justify-between rounded-2xl p-6 sm:p-8 lg:col-span-6">
           <div>
-            <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+            <h2 className="font-display text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
               Oʻquvchi kirishi
             </h2>
             <p className="mt-1.5 text-sm text-slate-600 dark:text-slate-400">
@@ -226,7 +250,7 @@ export function LoginScreen({
                     if (suggestedFixName) setSuggestedFixName(null);
                   }}
                   placeholder="Masalan: Aziza Karimova"
-                  className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base text-slate-900 placeholder:text-slate-400 focus:border-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-sky-400"
+                  className="gloss-input mt-2 block w-full rounded-xl px-4 py-3 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none dark:text-slate-100 dark:placeholder:text-slate-500"
                 />
               </div>
 
@@ -253,10 +277,10 @@ export function LoginScreen({
                           if (error) setError(null);
                           if (suggestedFixName) setSuggestedFixName(null);
                         }}
-                        className={`min-h-[44px] rounded-xl border text-sm font-semibold tabular-nums transition-colors ${
+                        className={`min-h-[44px] rounded-xl text-sm font-semibold tabular-nums ${
                           active
-                            ? 'border-sky-600 bg-sky-600 text-white dark:border-sky-500 dark:bg-sky-500 dark:text-slate-950'
-                            : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-800'
+                            ? 'gloss-btn-primary text-white'
+                            : 'gloss-btn-secondary text-slate-700 dark:text-slate-200'
                         }`}
                       >
                         {grade}
@@ -278,10 +302,10 @@ export function LoginScreen({
                           if (error) setError(null);
                           if (suggestedFixName) setSuggestedFixName(null);
                         }}
-                        className={`min-h-[44px] rounded-xl border text-sm font-semibold tabular-nums transition-colors ${
+                        className={`min-h-[44px] rounded-xl text-sm font-semibold tabular-nums ${
                           active
-                            ? 'border-sky-600 bg-sky-50 text-sky-800 dark:border-sky-400 dark:bg-sky-950/60 dark:text-sky-300'
-                            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-800'
+                            ? 'border border-sky-500/70 bg-sky-50 text-sky-800 shadow-xs dark:border-sky-400/60 dark:bg-sky-500/15 dark:text-sky-300 dark:shadow-[inset_0_1px_0_rgba(186,230,253,0.22),0_0_20px_-6px_rgba(56,189,248,0.45)]'
+                            : 'gloss-btn-secondary text-slate-700 dark:text-slate-300'
                         }`}
                       >
                         {selectedGrade}-{sec}
@@ -295,7 +319,7 @@ export function LoginScreen({
                 <div
                   data-testid="surname-first-warning"
                   role="status"
-                  className="rounded-xl border border-amber-300 bg-amber-50/90 p-3.5 text-sm text-amber-950 dark:border-amber-800/70 dark:bg-amber-950/40 dark:text-amber-200"
+                  className="rounded-xl border border-amber-300 bg-amber-50/90 p-3.5 text-sm text-amber-950 dark:border-amber-500/35 dark:bg-amber-950/35 dark:text-amber-200"
                 >
                   <div className="flex items-start gap-2.5">
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
@@ -310,7 +334,7 @@ export function LoginScreen({
                         type="button"
                         data-testid="fix-name-order-btn"
                         onClick={() => applySuggestedFix(liveSuggestedName)}
-                        className="mt-2 inline-flex min-h-[34px] items-center gap-1.5 rounded-lg bg-amber-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-amber-700 dark:bg-amber-500 dark:text-slate-950 dark:hover:bg-amber-400"
+                        className="mt-2 inline-flex min-h-[34px] items-center gap-1.5 rounded-lg bg-amber-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-amber-700 dark:bg-amber-400 dark:text-slate-950 dark:hover:bg-amber-300"
                       >
                         <Sparkles className="h-3.5 w-3.5" />
                         <span>«{liveSuggestedName}» deb toʻgʻrilash</span>
@@ -324,7 +348,7 @@ export function LoginScreen({
                 <div
                   data-testid="returning-student-banner"
                   role="status"
-                  className="rounded-xl border border-emerald-200 bg-emerald-50/80 p-3.5 text-sm text-emerald-950 dark:border-emerald-900/60 dark:bg-emerald-950/35 dark:text-emerald-200"
+                  className="rounded-xl border border-emerald-200 bg-emerald-50/85 p-3.5 text-sm text-emerald-950 dark:border-emerald-500/35 dark:bg-emerald-950/30 dark:text-emerald-200"
                 >
                   <div className="flex items-start gap-2.5">
                     <UserCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700 dark:text-emerald-400" />
@@ -349,7 +373,7 @@ export function LoginScreen({
                               lookupMatch.className,
                             )
                           }
-                          className="mt-2 inline-flex min-h-[34px] items-center gap-1.5 rounded-lg bg-emerald-700 px-3 text-xs font-semibold text-white transition-colors hover:bg-emerald-800 dark:bg-emerald-500 dark:text-slate-950 dark:hover:bg-emerald-400"
+                          className="gloss-btn-emerald mt-2 inline-flex min-h-[34px] items-center gap-1.5 rounded-lg px-3 text-xs font-semibold"
                         >
                           <span>{lookupMatch.className} sinfidagi profilga kirish</span>
                           <ArrowRight className="h-3.5 w-3.5" />
@@ -363,7 +387,7 @@ export function LoginScreen({
               {error && (
                 <div
                   role="alert"
-                  className="rounded-xl border border-red-200 bg-red-50 p-3.5 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300"
+                  className="rounded-xl border border-red-200 bg-red-50 p-3.5 text-sm text-red-800 dark:border-red-500/35 dark:bg-red-950/40 dark:text-red-300"
                 >
                   <div className="flex items-start gap-2.5">
                     <Lock className="mt-0.5 h-4 w-4 shrink-0" />
@@ -388,21 +412,21 @@ export function LoginScreen({
               <button
                 type="submit"
                 disabled={submitting}
-                className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-sky-600 px-5 py-3 text-base font-semibold text-white transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-sky-500 dark:text-slate-950 dark:hover:bg-sky-400"
+                className="gloss-btn-primary flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-base font-semibold disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <span>
                   {submitting
                     ? 'Tekshirilmoqda...'
                     : canSubmitDirectlyToProfile
                       ? 'Profilga kirish'
-                      : 'Davom etish (Continue)'}
+                      : 'Davom etish'}
                 </span>
                 <ArrowRight className="h-4 w-4" />
               </button>
             </form>
           </div>
 
-          <div className="mt-6 flex items-center justify-between border-t border-slate-200 pt-4 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
+          <div className="mt-6 flex items-center justify-between border-t border-slate-200/80 pt-4 text-xs text-slate-500 dark:border-white/10 dark:text-slate-400">
             <span className="flex items-center gap-1.5">
               <UserCheck className="h-4 w-4 text-slate-400" />
               <span>Har bir oʻquvchi profili saqlanadi</span>

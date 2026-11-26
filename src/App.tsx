@@ -35,9 +35,9 @@ export default function App() {
       const saved = localStorage.getItem(DARK_MODE_KEY);
       if (saved === 'true') return true;
       if (saved === 'false') return false;
-      return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
+      return true;
     } catch {
-      return false;
+      return true;
     }
   });
 
@@ -168,7 +168,7 @@ export default function App() {
 
   if (bootstrapping) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 text-sm font-medium text-slate-500 dark:bg-slate-950 dark:text-slate-400">
+      <div className="obsidian-stage flex min-h-screen items-center justify-center text-sm font-medium text-slate-600 dark:text-slate-300">
         Yuklanmoqda...
       </div>
     );
@@ -198,7 +198,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+    <div className="obsidian-stage flex min-h-screen flex-col text-slate-900 dark:text-slate-100">
       <Header
         view={view}
         student={student}

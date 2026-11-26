@@ -119,22 +119,22 @@ export function UnitsMenu({
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
       {/* Student header summary strip */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 dark:border-slate-800 dark:bg-slate-900">
+      <section className="gloss-panel rounded-2xl p-5 sm:p-6">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div>
             <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
               <span>Oʻquvchi profili</span>
               <span aria-hidden="true">·</span>
-              <span className="font-mono-tabular font-semibold text-slate-700 dark:text-slate-300">
+              <span className="font-mono-tabular font-semibold text-slate-700 dark:text-slate-200">
                 {student.className} sinf
               </span>
             </div>
-            <h1 className="font-display mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-50">
+            <h1 className="font-display mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-white">
               {student.fullName}
             </h1>
           </div>
 
-          <div className="grid grid-cols-3 gap-4 border-t border-slate-200 pt-4 sm:border-t-0 sm:pt-0 sm:text-right dark:border-slate-800">
+          <div className="grid grid-cols-3 gap-4 border-t border-slate-200/80 pt-4 sm:border-t-0 sm:pt-0 sm:text-right dark:border-white/10">
             <div>
               <div className="font-mono-tabular text-xl font-bold text-sky-700 sm:text-2xl dark:text-sky-400">
                 {student.totalPoints}
@@ -142,13 +142,13 @@ export function UnitsMenu({
               <div className="text-xs text-slate-500 dark:text-slate-400">Umumiy ball</div>
             </div>
             <div>
-              <div className="font-mono-tabular text-xl font-bold text-slate-900 sm:text-2xl dark:text-slate-100">
+              <div className="font-mono-tabular text-xl font-bold text-slate-900 sm:text-2xl dark:text-white">
                 {student.completedUnits.length}/{ALL_UNITS.length}
               </div>
               <div className="text-xs text-slate-500 dark:text-slate-400">Unit bajarildi</div>
             </div>
             <div>
-              <div className="font-mono-tabular text-xl font-bold text-slate-900 sm:text-2xl dark:text-slate-100">
+              <div className="font-mono-tabular text-xl font-bold text-slate-900 sm:text-2xl dark:text-white">
                 {student.averagePercentage}%
               </div>
               <div className="text-xs text-slate-500 dark:text-slate-400">Oʻrtacha</div>
@@ -157,7 +157,7 @@ export function UnitsMenu({
         </div>
 
         {/* Course Completion Progress Bar & Next Recommended Unit CTA */}
-        <div className="mt-5 flex flex-col gap-4 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
+        <div className="mt-5 flex flex-col gap-4 border-t border-slate-200/80 pt-4 sm:flex-row sm:items-center sm:justify-between dark:border-white/10">
           <div className="flex-1">
             <div className="flex items-center justify-between text-xs font-medium text-slate-600 dark:text-slate-400">
               <span>Umumiy oʻzlashtirish</span>
@@ -165,9 +165,9 @@ export function UnitsMenu({
                 {student.completedUnits.length} / {ALL_UNITS.length} unit ({completionPct}%)
               </span>
             </div>
-            <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+            <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-200/80 dark:bg-black/50">
               <div
-                className="h-full rounded-full bg-sky-600 transition-[width] duration-300 dark:bg-sky-400"
+                className="h-full rounded-full bg-gradient-to-r from-sky-500 to-cyan-400 transition-[width] duration-300 dark:shadow-[0_0_16px_rgba(56,189,248,0.5)]"
                 style={{ width: `${completionPct}%` }}
               />
             </div>
@@ -177,7 +177,7 @@ export function UnitsMenu({
             <button
               type="button"
               onClick={() => onStartUnit(nextRecommendedUnit)}
-              className="inline-flex min-h-[40px] shrink-0 items-center justify-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 text-xs font-semibold text-sky-800 transition-colors hover:bg-sky-100 whitespace-nowrap dark:border-sky-800 dark:bg-sky-950/60 dark:text-sky-300 dark:hover:bg-sky-900/60"
+              className="gloss-btn-secondary inline-flex min-h-[40px] shrink-0 items-center justify-center gap-2 rounded-xl px-4 text-xs font-semibold text-sky-700 whitespace-nowrap dark:text-sky-300"
             >
               <Play className="h-3.5 w-3.5" />
               <span>
@@ -199,13 +199,13 @@ export function UnitsMenu({
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Unit nomi, raqami yoki soʻz boʻyicha qidirish..."
               aria-label="Unit qidirish"
-              className="min-h-[42px] w-full rounded-xl border border-slate-200 bg-white pr-4 pl-10 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-600/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
+              className="gloss-input min-h-[42px] w-full rounded-xl pr-4 pl-10 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none dark:text-slate-100 dark:placeholder:text-slate-500"
             />
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2.5">
             <div
-              className="inline-flex rounded-xl border border-slate-200 bg-slate-100 p-1 dark:border-slate-800 dark:bg-slate-900"
+              className="inline-flex rounded-xl border border-slate-200 bg-slate-200/70 p-1 dark:border-white/10 dark:bg-black/45"
               role="tablist"
               aria-label="Unitlar filtri"
             >
@@ -224,7 +224,7 @@ export function UnitsMenu({
                   onClick={() => setFilter(tab.id)}
                   className={`min-h-[34px] rounded-lg px-3 py-1.5 text-xs font-semibold whitespace-nowrap shrink-0 transition-colors ${
                     filter === tab.id
-                      ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-800 dark:text-slate-100'
+                      ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-800/90 dark:text-white dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]'
                       : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
                   }`}
                 >
@@ -237,7 +237,7 @@ export function UnitsMenu({
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as UnitSort)}
               aria-label="Unitlarni saralash"
-              className="min-h-[42px] rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 focus:border-sky-600 focus:outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+              className="gloss-input min-h-[42px] rounded-xl px-3 text-xs font-semibold text-slate-700 focus:outline-none dark:text-slate-200"
             >
               <option value="number">Tartib: Unit raqami</option>
               <option value="pending-first">Avval ishlanmaganlar</option>
@@ -247,7 +247,7 @@ export function UnitsMenu({
             <button
               type="button"
               onClick={onOpenProfile}
-              className="hidden min-h-[42px] items-center rounded-xl border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 whitespace-nowrap shrink-0 md:inline-flex dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+              className="gloss-btn-secondary hidden min-h-[42px] items-center rounded-xl px-4 text-xs font-semibold text-slate-700 whitespace-nowrap shrink-0 md:inline-flex dark:text-slate-200"
             >
               Natijalar tarixi ({student.attempts.length})
             </button>
@@ -270,10 +270,10 @@ export function UnitsMenu({
                   role="tab"
                   aria-selected={active}
                   onClick={() => setRangeFilter(range.id)}
-                  className={`min-h-[34px] rounded-xl border px-3 py-1 text-xs font-semibold tabular-nums whitespace-nowrap transition-colors ${
+                  className={`min-h-[34px] rounded-xl px-3 py-1 text-xs font-semibold tabular-nums whitespace-nowrap ${
                     active
-                      ? 'border-sky-600 bg-sky-600 text-white dark:border-sky-500 dark:bg-sky-500 dark:text-slate-950'
-                      : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'
+                      ? 'gloss-btn-primary text-white'
+                      : 'gloss-btn-secondary text-slate-700 dark:text-slate-300'
                   }`}
                 >
                   {range.label}
@@ -290,7 +290,7 @@ export function UnitsMenu({
 
       {/* Units Grid */}
       {filteredUnits.length === 0 ? (
-        <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-10 text-center dark:border-slate-800 dark:bg-slate-900">
+        <div className="gloss-panel mt-8 rounded-2xl p-10 text-center">
           <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
             Mos unit topilmadi. Qidiruv yoki filtrni oʻzgartirib koʻring.
           </p>
@@ -302,7 +302,7 @@ export function UnitsMenu({
                 setFilter('all');
                 setRangeFilter('all');
               }}
-              className="mt-4 inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-4 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-800"
+              className="gloss-btn-secondary mt-4 inline-flex min-h-[38px] items-center gap-1.5 rounded-xl px-4 text-xs font-semibold text-slate-700 dark:text-slate-200"
             >
               <RotateCcw className="h-3.5 w-3.5" />
               <span>Filtrlarni tozalash</span>
@@ -320,7 +320,7 @@ export function UnitsMenu({
               <article
                 key={unit.unitNumber}
                 data-testid={`unit-card-${unit.unitNumber}`}
-                className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 transition-colors hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700"
+                className="gloss-card flex flex-col justify-between rounded-2xl p-5"
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
@@ -334,7 +334,7 @@ export function UnitsMenu({
                     </div>
                   </div>
 
-                  <h2 className="mt-2 text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                  <h2 className="mt-2 text-lg font-bold tracking-tight text-slate-900 dark:text-white">
                     {unit.title}
                   </h2>
                   <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
@@ -342,7 +342,7 @@ export function UnitsMenu({
                   </p>
                 </div>
 
-                <div className="mt-5 border-t border-slate-100 pt-4 dark:border-slate-800">
+                <div className="mt-5 border-t border-slate-200/80 pt-4 dark:border-white/10">
                   {stats ? (
                     <div className="mb-3 flex items-center justify-between text-xs">
                       <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-700 dark:text-emerald-400">
@@ -363,7 +363,11 @@ export function UnitsMenu({
                   <button
                     type="button"
                     onClick={() => onStartUnit(unit)}
-                    className="inline-flex min-h-[42px] w-full items-center justify-center gap-1.5 rounded-xl bg-sky-600 px-4 text-xs font-semibold text-white transition-colors hover:bg-sky-700 whitespace-nowrap dark:bg-sky-500 dark:text-slate-950 dark:hover:bg-sky-400"
+                    className={`inline-flex min-h-[42px] w-full items-center justify-center gap-1.5 rounded-xl px-4 text-xs font-semibold whitespace-nowrap ${
+                      stats
+                        ? 'gloss-btn-secondary text-slate-800 dark:text-slate-100'
+                        : 'gloss-btn-primary text-white'
+                    }`}
                   >
                     <Play className="h-3.5 w-3.5" />
                     <span>{stats ? 'Qayta ishlash' : 'Testni boshlash'}</span>

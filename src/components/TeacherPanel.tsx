@@ -305,7 +305,7 @@ export function TeacherPanel({
   if (!teacherToken) {
     return (
       <main className="mx-auto flex w-full max-w-md flex-1 items-center px-4 py-10">
-        <section className="w-full rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 dark:border-slate-800 dark:bg-slate-900">
+        <section className="gloss-panel w-full rounded-2xl p-6 sm:p-8">
           <div className="flex items-center gap-2.5 text-sky-700 dark:text-sky-400">
             <Lock className="h-5 w-5" />
             <span className="text-xs font-semibold uppercase tracking-wider">
@@ -313,7 +313,7 @@ export function TeacherPanel({
             </span>
           </div>
 
-          <h1 className="font-display mt-2 text-2xl font-bold text-slate-900 dark:text-slate-50">
+          <h1 className="font-display mt-2 text-2xl font-bold text-slate-900 dark:text-white">
             Oʻqituvchi paneli
           </h1>
           <p className="mt-1.5 text-sm text-slate-600 dark:text-slate-400">
@@ -335,14 +335,14 @@ export function TeacherPanel({
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base text-slate-900 focus:border-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                className="gloss-input mt-2 block w-full rounded-xl px-4 py-3 text-base text-slate-900 focus:outline-none dark:text-slate-100"
               />
             </div>
 
             {loginError && (
               <div
                 role="alert"
-                className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300"
+                className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-500/40 dark:bg-red-950/40 dark:text-red-300"
               >
                 {loginError}
               </div>
@@ -351,7 +351,7 @@ export function TeacherPanel({
             <button
               type="submit"
               disabled={loggingIn}
-              className="min-h-[46px] w-full rounded-xl bg-sky-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-sky-700 disabled:opacity-60 dark:bg-sky-500 dark:text-slate-950 dark:hover:bg-sky-400"
+              className="gloss-btn-primary min-h-[46px] w-full rounded-xl px-5 text-sm font-semibold disabled:opacity-60"
             >
               {loggingIn ? 'Tekshirilmoqda...' : 'Kirish'}
             </button>
@@ -359,7 +359,7 @@ export function TeacherPanel({
             <button
               type="button"
               onClick={onBack}
-              className="min-h-[42px] w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-800"
+              className="gloss-btn-secondary min-h-[42px] w-full rounded-xl px-4 text-sm font-semibold text-slate-700 dark:text-slate-200"
             >
               Orqaga qaytish
             </button>
@@ -374,7 +374,7 @@ export function TeacherPanel({
       {/* Top Toolbar */}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="font-display text-2xl font-bold text-slate-900 sm:text-3xl dark:text-slate-50">
+          <h1 className="font-display text-2xl font-bold text-slate-900 sm:text-3xl dark:text-white">
             Oʻqituvchi boshqaruv paneli
           </h1>
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
@@ -386,7 +386,7 @@ export function TeacherPanel({
           <button
             type="button"
             onClick={openTimerModal}
-            className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+            className="gloss-btn-secondary inline-flex min-h-[40px] items-center gap-1.5 rounded-xl px-3.5 text-xs font-semibold text-slate-700 dark:text-slate-200"
           >
             <Clock className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
             <span>Taymer: {testDurationMinutes} daq</span>
@@ -395,7 +395,7 @@ export function TeacherPanel({
           <button
             type="button"
             onClick={() => openSecurityModal('teacher')}
-            className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+            className="gloss-btn-secondary inline-flex min-h-[40px] items-center gap-1.5 rounded-xl px-3.5 text-xs font-semibold text-slate-700 dark:text-slate-200"
           >
             <KeyRound className="h-3.5 w-3.5" />
             <span>Parolni yangilash</span>
@@ -404,7 +404,7 @@ export function TeacherPanel({
           <button
             type="button"
             onClick={() => openSecurityModal('cheater')}
-            className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+            className="gloss-btn-secondary inline-flex min-h-[40px] items-center gap-1.5 rounded-xl px-3.5 text-xs font-semibold text-slate-700 dark:text-slate-200"
           >
             <ShieldAlert className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
             <span>Cheater paroli</span>
@@ -414,7 +414,7 @@ export function TeacherPanel({
             type="button"
             onClick={exportCsv}
             disabled={filteredStudents.length === 0}
-            className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+            className="gloss-btn-secondary inline-flex min-h-[40px] items-center gap-1.5 rounded-xl px-3.5 text-xs font-semibold text-slate-700 disabled:opacity-50 dark:text-slate-200"
           >
             <Download className="h-3.5 w-3.5" />
             <span>CSV yuklash</span>
@@ -423,7 +423,7 @@ export function TeacherPanel({
           <button
             type="button"
             onClick={handleTeacherLogout}
-            className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 text-xs font-semibold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+            className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-slate-700/20 bg-slate-900 px-3.5 text-xs font-semibold text-white hover:bg-slate-800 dark:border-white/20 dark:bg-white/95 dark:text-slate-950 dark:hover:bg-white"
           >
             <LogOut className="h-3.5 w-3.5" />
             <span>Chiqish</span>
@@ -433,19 +433,19 @@ export function TeacherPanel({
 
       {/* KPI Row */}
       <section className="mt-6 grid grid-cols-3 gap-4">
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-900">
+        <div className="gloss-card rounded-2xl p-4 sm:p-5">
           <div className="text-xs text-slate-500 dark:text-slate-400">Oʻquvchilar</div>
-          <div className="font-mono-tabular mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">
+          <div className="font-mono-tabular mt-1 text-2xl font-bold text-slate-900 dark:text-white">
             {filteredStudents.length}
           </div>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-900">
+        <div className="gloss-card rounded-2xl p-4 sm:p-5">
           <div className="text-xs text-slate-500 dark:text-slate-400">Topshirilgan testlar</div>
-          <div className="font-mono-tabular mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">
+          <div className="font-mono-tabular mt-1 text-2xl font-bold text-slate-900 dark:text-white">
             {totalAttempts}
           </div>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-900">
+        <div className="gloss-card rounded-2xl p-4 sm:p-5">
           <div className="text-xs text-slate-500 dark:text-slate-400">Oʻrtacha natija</div>
           <div className="font-mono-tabular mt-1 text-2xl font-bold text-sky-700 dark:text-sky-400">
             {avgClassScore}%
@@ -463,7 +463,7 @@ export function TeacherPanel({
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Ism-familiya boʻyicha qidirish..."
             aria-label="O'quvchi qidirish"
-            className="min-h-[42px] w-full rounded-xl border border-slate-200 bg-white pr-4 pl-10 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-600 focus:outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
+            className="gloss-input min-h-[42px] w-full rounded-xl pr-4 pl-10 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
 
@@ -471,7 +471,7 @@ export function TeacherPanel({
           aria-label="Sinf bo'yicha filtr"
           value={classFilter}
           onChange={(e) => setClassFilter(e.target.value)}
-          className="min-h-[42px] rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-800 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
+          className="gloss-input min-h-[42px] rounded-xl px-3.5 text-sm font-medium text-slate-800 focus:outline-none dark:text-slate-100"
         >
           <option value="all">Barcha sinflar</option>
           {allClasses.map((cls) => (
@@ -485,7 +485,7 @@ export function TeacherPanel({
           aria-label="Unit bo'yicha filtr"
           value={unitFilter}
           onChange={(e) => setUnitFilter(e.target.value)}
-          className="min-h-[42px] rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-800 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
+          className="gloss-input min-h-[42px] rounded-xl px-3.5 text-sm font-medium text-slate-800 focus:outline-none dark:text-slate-100"
         >
           <option value="all">Barcha unitlar</option>
           {ALL_UNITS.map((u) => (
@@ -499,7 +499,7 @@ export function TeacherPanel({
       {dataError && (
         <div
           role="alert"
-          className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3.5 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300"
+          className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3.5 text-sm text-red-800 dark:border-red-500/40 dark:bg-red-950/40 dark:text-red-300"
         >
           {dataError}
         </div>
@@ -508,7 +508,7 @@ export function TeacherPanel({
       {/* View Mode Switch: Students List vs Class & Hardest Questions */}
       <div className="mt-5 flex items-center justify-between gap-3">
         <div
-          className="inline-flex rounded-xl border border-slate-200 bg-slate-100 p-1 dark:border-slate-800 dark:bg-slate-900"
+          className="inline-flex rounded-xl border border-slate-200 bg-slate-200/70 p-1 dark:border-white/10 dark:bg-black/45"
           role="tablist"
           aria-label="O'qituvchi ko'rinishlari"
         >
@@ -519,7 +519,7 @@ export function TeacherPanel({
             onClick={() => setTeacherTab('students')}
             className={`min-h-[36px] rounded-lg px-3.5 text-xs font-semibold whitespace-nowrap transition-colors ${
               teacherTab === 'students'
-                ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-800 dark:text-slate-100'
+                ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-800/90 dark:text-white dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]'
                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
             }`}
           >
@@ -532,7 +532,7 @@ export function TeacherPanel({
             onClick={() => setTeacherTab('insights')}
             className={`min-h-[36px] rounded-lg px-3.5 text-xs font-semibold whitespace-nowrap transition-colors ${
               teacherTab === 'insights'
-                ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-800 dark:text-slate-100'
+                ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-800/90 dark:text-white dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]'
                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
             }`}
           >
@@ -544,14 +544,14 @@ export function TeacherPanel({
       {/* Results Table / Class & Mistake Insights */}
       <section className="mt-4">
         {loadingData ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+          <div className="gloss-panel rounded-2xl p-10 text-center text-sm text-slate-500 dark:text-slate-400">
             Maʼlumotlar yuklanmoqda...
           </div>
         ) : teacherTab === 'insights' ? (
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Class Breakdown */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
-              <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+            <div className="gloss-panel rounded-2xl p-5">
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">
                 Sinflar kesimida oʻrtacha natijalar
               </h2>
               {classAndMistakeStats.classes.length === 0 ? (
@@ -561,7 +561,7 @@ export function TeacherPanel({
               ) : (
                 <div className="mt-4 overflow-x-auto">
                   <table className="w-full text-left text-xs">
-                    <thead className="border-b border-slate-200 text-slate-500 dark:border-slate-800 dark:text-slate-400">
+                    <thead className="border-b border-slate-200/80 text-slate-500 dark:border-white/10 dark:text-slate-400">
                       <tr>
                         <th className="py-2 pr-3 font-semibold">Sinf</th>
                         <th className="py-2 pr-3 font-semibold">Oʻquvchi</th>
@@ -570,10 +570,10 @@ export function TeacherPanel({
                         <th className="py-2 font-semibold text-right">Jami ball</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                    <tbody className="divide-y divide-slate-200/70 dark:divide-white/10">
                       {classAndMistakeStats.classes.map((cls) => (
                         <tr key={cls.className}>
-                          <td className="py-2.5 pr-3 font-mono-tabular font-bold text-slate-900 dark:text-slate-100">
+                          <td className="py-2.5 pr-3 font-mono-tabular font-bold text-slate-900 dark:text-white">
                             {cls.className}
                           </td>
                           <td className="py-2.5 pr-3 font-mono-tabular text-slate-700 dark:text-slate-300">
@@ -597,8 +597,8 @@ export function TeacherPanel({
             </div>
 
             {/* Hardest Questions */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
-              <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+            <div className="gloss-panel rounded-2xl p-5">
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">
                 Eng koʻp xato qilingan savollar (Top 5)
               </h2>
               {classAndMistakeStats.hardestQuestions.length === 0 ? (
@@ -610,7 +610,7 @@ export function TeacherPanel({
                   {classAndMistakeStats.hardestQuestions.map((hq, idx) => (
                     <div
                       key={hq.questionId}
-                      className="rounded-xl border border-slate-200 p-3.5 text-xs dark:border-slate-800"
+                      className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-3.5 text-xs dark:border-white/10 dark:bg-black/35"
                     >
                       <div className="flex items-center justify-between gap-2 text-slate-500 dark:text-slate-400">
                         <span className="font-mono-tabular font-semibold text-sky-700 dark:text-sky-400">
@@ -620,7 +620,7 @@ export function TeacherPanel({
                           {hq.missCount} marta xato
                         </span>
                       </div>
-                      <p className="mt-1.5 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                      <p className="mt-1.5 text-sm font-semibold text-slate-900 dark:text-white">
                         {hq.prompt}
                       </p>
                       <p className="mt-1 text-xs font-medium text-emerald-700 dark:text-emerald-400">
@@ -633,14 +633,14 @@ export function TeacherPanel({
             </div>
           </div>
         ) : filteredStudents.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+          <div className="gloss-panel rounded-2xl p-10 text-center text-sm text-slate-500 dark:text-slate-400">
             Hozircha mos oʻquvchi natijalari mavjud emas.
           </div>
         ) : (
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+          <div className="gloss-panel overflow-hidden rounded-2xl">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400">
+                <thead className="border-b border-slate-200/80 bg-slate-50/90 text-xs font-semibold text-slate-600 dark:border-white/10 dark:bg-black/45 dark:text-slate-300">
                   <tr>
                     <th className="px-4 py-3.5">Oʻquvchi</th>
                     <th className="px-4 py-3.5">Sinf</th>
@@ -650,13 +650,13 @@ export function TeacherPanel({
                     <th className="px-4 py-3.5 text-right">Amallar</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                <tbody className="divide-y divide-slate-200/70 dark:divide-white/10">
                   {filteredStudents.map((s) => (
                     <tr
                       key={s.id}
-                      className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40"
+                      className="transition-colors hover:bg-slate-50/80 dark:hover:bg-white/[0.03]"
                     >
-                      <td className="px-4 py-3.5 font-semibold text-slate-900 dark:text-slate-100">
+                      <td className="px-4 py-3.5 font-semibold text-slate-900 dark:text-white">
                         {s.fullName}
                       </td>
                       <td className="px-4 py-3.5 font-mono-tabular text-slate-700 dark:text-slate-300">
@@ -679,7 +679,7 @@ export function TeacherPanel({
                               setSelectedStudent(s);
                               setSelectedAttempt(s.attempts[0] ?? null);
                             }}
-                            className="inline-flex min-h-[34px] items-center gap-1 rounded-lg border border-slate-200 px-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                            className="gloss-btn-secondary inline-flex min-h-[34px] items-center gap-1 rounded-lg px-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200"
                           >
                             <Eye className="h-3.5 w-3.5" />
                             <span>Batafsil</span>
@@ -689,7 +689,7 @@ export function TeacherPanel({
                             onClick={() => void handleDeleteStudent(s.id)}
                             aria-label={`${s.fullName} akkauntini o'chirish`}
                             title="Akkauntni o'chirish / blokdan chiqarish"
-                            className="inline-flex h-[34px] w-[34px] items-center justify-center rounded-lg border border-slate-200 text-red-600 hover:bg-red-50 dark:border-slate-700 dark:text-red-400 dark:hover:bg-red-950/50"
+                            className="gloss-btn-secondary inline-flex h-[34px] w-[34px] items-center justify-center rounded-lg text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/50"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
@@ -707,19 +707,19 @@ export function TeacherPanel({
       {/* Student Detail Modal */}
       {selectedStudent && studentAnalytics && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/65 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-md"
           role="dialog"
           aria-modal="true"
           aria-label="O'quvchi natijalari tafsiloti"
         >
-          <div className="flex max-h-[92vh] w-full max-w-4xl flex-col rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-4 dark:border-slate-800">
+          <div className="gloss-panel flex max-h-[92vh] w-full max-w-4xl flex-col rounded-2xl">
+            <div className="flex items-start justify-between gap-4 border-b border-slate-200/80 px-6 py-4 dark:border-white/10">
               <div>
                 <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
                   {selectedStudent.className} sinf · Daraja {getStudentMasteryRank(selectedStudent.totalPoints).level}:{' '}
                   {getStudentMasteryRank(selectedStudent.totalPoints).title} · Umumiy ball: {selectedStudent.totalPoints} · Bajarilgan unitlar: {selectedStudent.completedUnits.length}/{ALL_UNITS.length}
                 </div>
-                <h2 className="mt-0.5 text-lg font-bold text-slate-900 dark:text-slate-100">
+                <h2 className="mt-0.5 text-lg font-bold text-slate-900 dark:text-white">
                   {selectedStudent.fullName}
                 </h2>
               </div>
@@ -730,7 +730,7 @@ export function TeacherPanel({
                   setSelectedAttempt(null);
                 }}
                 aria-label="Tafsilot oynasini yopish"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/10"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -745,35 +745,35 @@ export function TeacherPanel({
                 <div className="space-y-6">
                   {/* Overall Student Statistics Cards */}
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5 dark:border-slate-800 dark:bg-slate-950">
+                    <div className="rounded-xl border border-slate-200/80 bg-slate-50/90 p-3.5 dark:border-white/10 dark:bg-black/35">
                       <div className="text-xs text-slate-500 dark:text-slate-400">Umumiy ball</div>
                       <div className="font-mono-tabular mt-1 text-xl font-bold text-sky-700 dark:text-sky-400">
                         {selectedStudent.totalPoints}
                       </div>
                     </div>
 
-                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5 dark:border-slate-800 dark:bg-slate-950">
+                    <div className="rounded-xl border border-slate-200/80 bg-slate-50/90 p-3.5 dark:border-white/10 dark:bg-black/35">
                       <div className="text-xs text-slate-500 dark:text-slate-400">Oʻrtacha</div>
-                      <div className="font-mono-tabular mt-1 text-xl font-bold text-slate-900 dark:text-slate-100">
+                      <div className="font-mono-tabular mt-1 text-xl font-bold text-slate-900 dark:text-white">
                         {selectedStudent.averagePercentage}%
                       </div>
                     </div>
 
-                    <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-3.5 dark:border-emerald-900/50 dark:bg-emerald-950/20">
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-3.5 dark:border-emerald-500/30 dark:bg-emerald-950/25">
                       <div className="text-xs text-emerald-800 dark:text-emerald-300">Eng yuqori</div>
                       <div className="font-mono-tabular mt-1 text-xl font-bold text-emerald-900 dark:text-emerald-200">
                         {studentAnalytics.bestAttempt?.percentage ?? 0}%
                       </div>
                     </div>
 
-                    <div className="rounded-xl border border-red-200 bg-red-50/60 p-3.5 dark:border-red-900/50 dark:bg-red-950/20">
+                    <div className="rounded-xl border border-red-200 bg-red-50/60 p-3.5 dark:border-red-500/30 dark:bg-red-950/25">
                       <div className="text-xs text-red-800 dark:text-red-300">Eng past</div>
                       <div className="font-mono-tabular mt-1 text-xl font-bold text-red-900 dark:text-red-200">
                         {studentAnalytics.worstAttempt?.percentage ?? 0}%
                       </div>
                     </div>
 
-                    <div className="col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-3.5 sm:col-span-1 dark:border-slate-800 dark:bg-slate-950">
+                    <div className="col-span-2 rounded-xl border border-slate-200/80 bg-slate-50/90 p-3.5 sm:col-span-1 dark:border-white/10 dark:bg-black/35">
                       <div className="text-xs text-slate-500 dark:text-slate-400">Oʻsish / Tushish</div>
                       <div className="mt-1 flex items-center gap-1 font-mono-tabular text-lg font-bold">
                         <TrendBadge
@@ -787,7 +787,7 @@ export function TeacherPanel({
 
                   {/* Chronological Growth / Drop SVG Chart */}
                   {studentAnalytics.chronological.length >= 2 && (
-                    <section className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 dark:border-slate-800 dark:bg-slate-950">
+                    <section className="rounded-2xl border border-slate-200/80 bg-slate-50/60 p-4 dark:border-white/10 dark:bg-black/35">
                       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                         <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
                           Natijalar oʻsishi va tushishi dinamikasi ({studentAnalytics.totalAttempts} ta test)
@@ -805,13 +805,13 @@ export function TeacherPanel({
 
                   {/* Per-Test Results & Growth/Drop Breakdown */}
                   <section>
-                    <h3 className="mb-2.5 text-sm font-bold text-slate-900 dark:text-slate-100">
+                    <h3 className="mb-2.5 text-sm font-bold text-slate-900 dark:text-white">
                       Har bir test boʻyicha statistika, ballar va oʻsish/tushishlar
                     </h3>
-                    <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800">
+                    <div className="overflow-hidden rounded-xl border border-slate-200/80 dark:border-white/10">
                       <div className="overflow-x-auto">
                         <table className="w-full text-left text-xs">
-                          <thead className="border-b border-slate-200 bg-slate-50 font-semibold text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400">
+                          <thead className="border-b border-slate-200/80 bg-slate-50 font-semibold text-slate-600 dark:border-white/10 dark:bg-black/45 dark:text-slate-300">
                             <tr>
                               <th className="px-3.5 py-2.5">#</th>
                               <th className="px-3.5 py-2.5">Unit</th>
@@ -822,7 +822,7 @@ export function TeacherPanel({
                               <th className="px-3.5 py-2.5">Vaqt</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                          <tbody className="divide-y divide-slate-200/70 dark:divide-white/10">
                             {studentAnalytics.newestFirst.map((entry) => {
                               const a = entry.attempt;
                               const isSelected = selectedAttempt?.id === a.id;
@@ -832,14 +832,14 @@ export function TeacherPanel({
                                   onClick={() => setSelectedAttempt(a)}
                                   className={`cursor-pointer transition-colors ${
                                     isSelected
-                                      ? 'bg-sky-50/80 dark:bg-sky-950/40'
-                                      : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'
+                                      ? 'bg-sky-50/80 dark:bg-sky-500/15'
+                                      : 'hover:bg-slate-50 dark:hover:bg-white/[0.03]'
                                   }`}
                                 >
                                   <td className="px-3.5 py-2.5 font-mono-tabular text-slate-500 dark:text-slate-400">
                                     #{entry.sequenceNumber}
                                   </td>
-                                  <td className="px-3.5 py-2.5 font-semibold text-slate-900 dark:text-slate-100">
+                                  <td className="px-3.5 py-2.5 font-semibold text-slate-900 dark:text-white">
                                     <div>Unit {a.unitNumber}: {a.unitTitle}</div>
                                     <div className="font-mono-tabular text-[11px] font-normal text-slate-500 dark:text-slate-400">
                                       {new Date(a.completedAt).toLocaleString('uz-UZ', {
@@ -862,7 +862,7 @@ export function TeacherPanel({
                                   <td className="px-3.5 py-2.5 font-mono-tabular font-bold text-sky-700 dark:text-sky-400">
                                     +{a.pointsEarned}
                                   </td>
-                                  <td className="px-3.5 py-2.5 font-mono-tabular font-bold text-slate-900 dark:text-slate-100">
+                                  <td className="px-3.5 py-2.5 font-mono-tabular font-bold text-slate-900 dark:text-white">
                                     {a.percentage}%
                                   </td>
                                   <td className="px-3.5 py-2.5 font-mono-tabular">
@@ -894,7 +894,7 @@ export function TeacherPanel({
                   {/* Selected Attempt Mistake Details */}
                   {selectedAttempt && (
                     <div className="space-y-4">
-                      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs font-semibold tabular-nums dark:border-slate-800 dark:bg-slate-950">
+                      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-slate-50 p-4 text-xs font-semibold tabular-nums dark:border-white/10 dark:bg-black/40">
                         <span>
                           Tanlangan test: Unit {selectedAttempt.unitNumber} — {selectedAttempt.unitTitle}
                         </span>
@@ -921,9 +921,9 @@ export function TeacherPanel({
                           {selectedAttempt.mistakes.map((m, idx) => (
                             <div
                               key={m.questionId}
-                              className="rounded-xl border border-slate-200 p-4 text-sm dark:border-slate-800"
+                              className="rounded-xl border border-slate-200/80 p-4 text-sm dark:border-white/10 dark:bg-black/30"
                             >
-                              <p className="font-semibold text-slate-900 dark:text-slate-100">
+                              <p className="font-semibold text-slate-900 dark:text-white">
                                 {idx + 1}. {m.prompt}
                               </p>
                               <p className="mt-1.5 text-xs text-red-700 dark:text-red-400">
@@ -948,16 +948,16 @@ export function TeacherPanel({
       {/* Change Teacher Password & Cheater Code Modal */}
       {showPasswordModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-xs"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-md"
           role="dialog"
           aria-modal="true"
           aria-labelledby="pw-modal-title"
         >
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
+          <div className="gloss-panel w-full max-w-md rounded-2xl p-6">
             <div className="flex items-center justify-between">
               <h2
                 id="pw-modal-title"
-                className="text-lg font-bold text-slate-900 dark:text-slate-100"
+                className="text-lg font-bold text-slate-900 dark:text-white"
               >
                 {passwordTab === 'teacher'
                   ? 'Oʻqituvchi parolini yangilash'
@@ -967,14 +967,14 @@ export function TeacherPanel({
                 type="button"
                 onClick={() => setShowPasswordModal(false)}
                 aria-label="Parol oynasini yopish"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/10"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             <div
-              className="mt-4 grid grid-cols-2 rounded-xl border border-slate-200 bg-slate-100 p-1 dark:border-slate-800 dark:bg-slate-950"
+              className="mt-4 grid grid-cols-2 rounded-xl border border-slate-200 bg-slate-200/70 p-1 dark:border-white/10 dark:bg-black/45"
               role="tablist"
               aria-label="Parol turi"
             >
@@ -989,7 +989,7 @@ export function TeacherPanel({
                 }}
                 className={`min-h-[34px] rounded-lg px-3 text-xs font-semibold transition-colors ${
                   passwordTab === 'teacher'
-                    ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-800 dark:text-slate-100'
+                    ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-800/90 dark:text-white dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]'
                     : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
                 }`}
               >
@@ -1006,7 +1006,7 @@ export function TeacherPanel({
                 }}
                 className={`min-h-[34px] rounded-lg px-3 text-xs font-semibold transition-colors ${
                   passwordTab === 'cheater'
-                    ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-800 dark:text-slate-100'
+                    ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-800/90 dark:text-white dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]'
                     : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
                 }`}
               >
@@ -1029,7 +1029,7 @@ export function TeacherPanel({
                     required
                     value={oldPassword}
                     onChange={(e) => setOldPassword(e.target.value)}
-                    className="mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-sky-600 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                    className="gloss-input mt-1.5 block w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none dark:text-slate-100"
                   />
                 </div>
 
@@ -1046,7 +1046,7 @@ export function TeacherPanel({
                     required
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    className="mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-sky-600 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                    className="gloss-input mt-1.5 block w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none dark:text-slate-100"
                   />
                 </div>
 
@@ -1063,14 +1063,14 @@ export function TeacherPanel({
                     required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-sky-600 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                    className="gloss-input mt-1.5 block w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none dark:text-slate-100"
                   />
                 </div>
 
                 {pwError && (
                   <div
                     role="alert"
-                    className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300"
+                    className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-800 dark:border-red-500/40 dark:bg-red-950/40 dark:text-red-300"
                   >
                     {pwError}
                   </div>
@@ -1079,7 +1079,7 @@ export function TeacherPanel({
                 {pwSuccess && (
                   <div
                     role="status"
-                    className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300"
+                    className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-950/40 dark:text-emerald-300"
                   >
                     <CheckCircle2 className="h-4 w-4 shrink-0" />
                     <span>{pwSuccess}</span>
@@ -1090,14 +1090,14 @@ export function TeacherPanel({
                   <button
                     type="button"
                     onClick={() => setShowPasswordModal(false)}
-                    className="min-h-[40px] rounded-xl border border-slate-200 px-4 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                    className="gloss-btn-secondary min-h-[40px] rounded-xl px-4 text-xs font-semibold text-slate-700 dark:text-slate-200"
                   >
                     Yopish
                   </button>
                   <button
                     type="submit"
                     disabled={pwSubmitting}
-                    className="min-h-[40px] rounded-xl bg-sky-600 px-5 text-xs font-semibold text-white hover:bg-sky-700 disabled:opacity-60 dark:bg-sky-500 dark:text-slate-950"
+                    className="gloss-btn-primary min-h-[40px] rounded-xl px-5 text-xs font-semibold disabled:opacity-60"
                   >
                     {pwSubmitting ? 'Saqlanmoqda...' : 'Parolni saqlash'}
                   </button>
@@ -1119,7 +1119,7 @@ export function TeacherPanel({
                     required
                     value={oldCheaterCode}
                     onChange={(e) => setOldCheaterCode(e.target.value)}
-                    className="mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 font-mono-tabular text-sm text-slate-900 focus:border-sky-600 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                    className="gloss-input mt-1.5 block w-full rounded-xl px-3.5 py-2.5 font-mono-tabular text-sm text-slate-900 focus:outline-none dark:text-slate-100"
                   />
                 </div>
 
@@ -1137,7 +1137,7 @@ export function TeacherPanel({
                     required
                     value={newCheaterCode}
                     onChange={(e) => setNewCheaterCode(e.target.value)}
-                    className="mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 font-mono-tabular text-sm text-slate-900 focus:border-sky-600 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                    className="gloss-input mt-1.5 block w-full rounded-xl px-3.5 py-2.5 font-mono-tabular text-sm text-slate-900 focus:outline-none dark:text-slate-100"
                   />
                 </div>
 
@@ -1155,14 +1155,14 @@ export function TeacherPanel({
                     required
                     value={confirmCheaterCode}
                     onChange={(e) => setConfirmCheaterCode(e.target.value)}
-                    className="mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 font-mono-tabular text-sm text-slate-900 focus:border-sky-600 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                    className="gloss-input mt-1.5 block w-full rounded-xl px-3.5 py-2.5 font-mono-tabular text-sm text-slate-900 focus:outline-none dark:text-slate-100"
                   />
                 </div>
 
                 {pwError && (
                   <div
                     role="alert"
-                    className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300"
+                    className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-800 dark:border-red-500/40 dark:bg-red-950/40 dark:text-red-300"
                   >
                     {pwError}
                   </div>
@@ -1171,7 +1171,7 @@ export function TeacherPanel({
                 {pwSuccess && (
                   <div
                     role="status"
-                    className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300"
+                    className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-950/40 dark:text-emerald-300"
                   >
                     <CheckCircle2 className="h-4 w-4 shrink-0" />
                     <span>{pwSuccess}</span>
@@ -1182,14 +1182,14 @@ export function TeacherPanel({
                   <button
                     type="button"
                     onClick={() => setShowPasswordModal(false)}
-                    className="min-h-[40px] rounded-xl border border-slate-200 px-4 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                    className="gloss-btn-secondary min-h-[40px] rounded-xl px-4 text-xs font-semibold text-slate-700 dark:text-slate-200"
                   >
                     Yopish
                   </button>
                   <button
                     type="submit"
                     disabled={pwSubmitting}
-                    className="min-h-[40px] rounded-xl bg-sky-600 px-5 text-xs font-semibold text-white hover:bg-sky-700 disabled:opacity-60 dark:bg-sky-500 dark:text-slate-950"
+                    className="gloss-btn-primary min-h-[40px] rounded-xl px-5 text-xs font-semibold disabled:opacity-60"
                   >
                     {pwSubmitting ? 'Saqlanmoqda...' : 'Cheater parolini saqlash'}
                   </button>
@@ -1203,16 +1203,16 @@ export function TeacherPanel({
       {/* Test Timer Configuration Modal */}
       {showTimerModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-xs"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-md"
           role="dialog"
           aria-modal="true"
           aria-labelledby="timer-modal-title"
         >
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
+          <div className="gloss-panel w-full max-w-md rounded-2xl p-6">
             <div className="flex items-center justify-between">
               <h2
                 id="timer-modal-title"
-                className="text-lg font-bold text-slate-900 dark:text-slate-100"
+                className="text-lg font-bold text-slate-900 dark:text-white"
               >
                 Test taymerini sozlash
               </h2>
@@ -1220,7 +1220,7 @@ export function TeacherPanel({
                 type="button"
                 onClick={() => setShowTimerModal(false)}
                 aria-label="Taymer oynasini yopish"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/10"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -1247,10 +1247,10 @@ export function TeacherPanel({
                           setTimerError(null);
                           setTimerSuccess(null);
                         }}
-                        className={`min-h-[38px] rounded-xl border px-3 text-xs font-semibold tabular-nums transition-colors ${
+                        className={`min-h-[38px] rounded-xl px-3 text-xs font-semibold tabular-nums ${
                           selected
-                            ? 'border-sky-600 bg-sky-600 text-white dark:border-sky-500 dark:bg-sky-500 dark:text-slate-950'
-                            : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-800'
+                            ? 'gloss-btn-primary text-white'
+                            : 'gloss-btn-secondary text-slate-700 dark:text-slate-300'
                         }`}
                       >
                         {mins} daq{mins === DEFAULT_TEST_DURATION_MINUTES ? ' · Standart' : ''}
@@ -1280,14 +1280,14 @@ export function TeacherPanel({
                     if (timerError) setTimerError(null);
                     if (timerSuccess) setTimerSuccess(null);
                   }}
-                  className="mt-1.5 block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 font-mono-tabular text-sm text-slate-900 focus:border-sky-600 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                  className="gloss-input mt-1.5 block w-full rounded-xl px-3.5 py-2.5 font-mono-tabular text-sm text-slate-900 focus:outline-none dark:text-slate-100"
                 />
               </div>
 
               {timerError && (
                 <div
                   role="alert"
-                  className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300"
+                  className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-800 dark:border-red-500/40 dark:bg-red-950/40 dark:text-red-300"
                 >
                   {timerError}
                 </div>
@@ -1296,7 +1296,7 @@ export function TeacherPanel({
               {timerSuccess && (
                 <div
                   role="status"
-                  className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300"
+                  className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-950/40 dark:text-emerald-300"
                 >
                   <CheckCircle2 className="h-4 w-4 shrink-0" />
                   <span>{timerSuccess}</span>
@@ -1307,14 +1307,14 @@ export function TeacherPanel({
                 <button
                   type="button"
                   onClick={() => setShowTimerModal(false)}
-                  className="min-h-[40px] rounded-xl border border-slate-200 px-4 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                  className="gloss-btn-secondary min-h-[40px] rounded-xl px-4 text-xs font-semibold text-slate-700 dark:text-slate-200"
                 >
                   Yopish
                 </button>
                 <button
                   type="submit"
                   disabled={timerSubmitting}
-                  className="min-h-[40px] rounded-xl bg-sky-600 px-5 text-xs font-semibold text-white hover:bg-sky-700 disabled:opacity-60 dark:bg-sky-500 dark:text-slate-950"
+                  className="gloss-btn-primary min-h-[40px] rounded-xl px-5 text-xs font-semibold disabled:opacity-60"
                 >
                   {timerSubmitting ? 'Saqlanmoqda...' : 'Taymerni saqlash'}
                 </button>
