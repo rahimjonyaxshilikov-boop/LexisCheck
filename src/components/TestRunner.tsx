@@ -237,10 +237,10 @@ export function TestRunner({
           </div>
         </div>
 
-        {/* Hairline luminous progress bar */}
-        <div className="h-0.5 w-full bg-slate-200/70 dark:bg-white/5">
+        {/* Hairline calm progress bar */}
+        <div className="h-1 w-full bg-slate-200/70 dark:bg-slate-800/70">
           <div
-            className="h-full bg-gradient-to-r from-sky-500 to-cyan-400 transition-[width] duration-200 dark:shadow-[0_0_12px_rgba(56,189,248,0.65)]"
+            className="h-full bg-gradient-to-r from-indigo-500 to-emerald-400 transition-[width] duration-200"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
@@ -300,15 +300,15 @@ export function TestRunner({
                     onClick={() => selectOption(idx)}
                     className={`flex min-h-[54px] w-full items-center gap-3.5 rounded-xl border px-4 py-3.5 text-left transition-all duration-150 ${
                       isSelected
-                        ? 'border-sky-600 bg-sky-50/90 text-slate-900 shadow-xs dark:border-sky-400/80 dark:bg-[#0c1d38] dark:bg-gradient-to-b dark:from-sky-500/25 dark:to-sky-900/35 dark:text-white dark:shadow-[inset_0_1px_0_rgba(186,230,253,0.32),0_12px_28px_-12px_rgba(56,189,248,0.45)]'
-                        : 'border-slate-200 bg-white/85 text-slate-800 hover:border-sky-300 hover:bg-slate-50 dark:border-white/10 dark:bg-black/35 dark:text-slate-200 dark:hover:border-sky-400/35 dark:hover:bg-white/[0.04]'
+                        ? 'border-indigo-600 bg-indigo-50 text-slate-900 dark:border-indigo-400/75 dark:bg-[#192642] dark:text-slate-50'
+                        : 'border-slate-200 bg-white/90 text-slate-800 hover:border-indigo-300 hover:bg-slate-50 dark:border-slate-700/45 dark:bg-[#0e1422] dark:text-slate-200 dark:hover:border-indigo-400/40 dark:hover:bg-[#161f33]'
                     }`}
                   >
                     <span
                       className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border font-mono-tabular text-xs font-bold transition-colors ${
                         isSelected
-                          ? 'border-sky-600 bg-sky-600 text-white dark:border-sky-400 dark:bg-sky-400 dark:text-slate-950'
-                          : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-white/15 dark:bg-white/5 dark:text-slate-400'
+                          ? 'border-indigo-600 bg-indigo-600 text-white dark:border-indigo-400 dark:bg-indigo-500 dark:text-white'
+                          : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700/60 dark:bg-slate-800/70 dark:text-slate-400'
                       }`}
                     >
                       {OPTION_LETTERS[idx]}
@@ -428,12 +428,12 @@ export function TestRunner({
                     }}
                     className={`relative min-h-[42px] rounded-lg border font-mono-tabular text-xs font-bold transition-colors ${
                       isCurrent
-                        ? 'gloss-btn-primary border-sky-400 text-white'
+                        ? 'gloss-btn-primary border-indigo-400 text-white'
                         : isFlagged
-                          ? 'border-amber-400 bg-amber-50 text-amber-900 dark:border-amber-400/60 dark:bg-amber-950/50 dark:text-amber-200'
+                          ? 'border-amber-400 bg-amber-50 text-amber-900 dark:border-amber-400/60 dark:bg-amber-950/40 dark:text-amber-200'
                           : isAnswered
-                            ? 'border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-400/40 dark:bg-sky-500/15 dark:text-sky-300'
-                            : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 dark:border-white/10 dark:bg-black/40 dark:text-slate-400 dark:hover:bg-white/10'
+                            ? 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-400/40 dark:bg-emerald-950/30 dark:text-emerald-300'
+                            : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 dark:border-slate-700/50 dark:bg-[#0e1422] dark:text-slate-400 dark:hover:bg-slate-800/60'
                     }`}
                   >
                     {idx + 1}
@@ -547,7 +547,7 @@ export function TestRunner({
                   exitingLegitRef.current = true;
                   onCancelTest();
                 }}
-                className="min-h-[42px] rounded-xl border border-red-400/40 bg-gradient-to-b from-red-500 to-red-700 px-4 text-sm font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)] hover:brightness-110"
+                className="min-h-[42px] rounded-xl border border-rose-500/40 bg-rose-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-rose-500"
               >
                 Chiqish
               </button>

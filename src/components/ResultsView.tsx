@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
+  Award,
   Check,
   CheckCircle2,
   Copy,
@@ -11,6 +12,7 @@ import {
   Share2,
   XCircle,
 } from 'lucide-react';
+import rewardResultsCrestImg from '../assets/images/reward_results_crest_1795706130483.jpg';
 import type { StudentProfile, TestAttempt } from '../types/quiz';
 import { formatCountdown, TOTAL_UNITS } from '../utils/quizEngine';
 import {
@@ -37,6 +39,7 @@ export function ResultsView({
   const [busyAction, setBusyAction] = useState<'save' | 'share' | null>(null);
   const [actionStatus, setActionStatus] = useState<string | null>(null);
   const [copiedText, setCopiedText] = useState(false);
+  const [crestImgFailed, setCrestImgFailed] = useState(false);
 
   const shareText = useMemo(
     () => buildResultShareText(student, attempt),
@@ -162,46 +165,64 @@ export function ResultsView({
     <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
       {/* Results Summary Card */}
       <section className="gloss-panel rounded-2xl p-6 sm:p-8">
-        <div className="flex flex-col justify-between gap-4 border-b border-slate-200/80 pb-6 sm:flex-row sm:items-start dark:border-white/10">
-          <div>
-            <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
-              <span>Test natijalari</span>
-              <span aria-hidden="true">·</span>
-              <span>Unit {attempt.unitNumber}</span>
-              <span aria-hidden="true">·</span>
-              <span className="font-mono-tabular">
-                Sarflangan vaqt: {formatCountdown(attempt.durationSeconds)}
-              </span>
+        <div className="flex flex-col justify-between gap-5 border-b border-slate-200/80 pb-6 sm:flex-row sm:items-center dark:border-slate-700/40">
+          <div className="flex items-center gap-4">
+            <div className="hidden h-24 w-32 shrink-0 overflow-hidden rounded-xl border border-slate-200/80 sm:block dark:border-slate-700/40">
+              {!crestImgFailed ? (
+                <img
+                  src={rewardResultsCrestImg}
+                  alt="Natija nishoni"
+                  referrerPolicy="no-referrer"
+                  onError={() => setCrestImgFailed(true)}
+                  className="h-full w-full object-cover object-center"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-900 via-slate-800 to-emerald-900">
+                  <Award className="h-8 w-8 text-amber-300" />
+                </div>
+              )}
             </div>
 
-            <h1 className="font-display mt-1.5 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-white">
-              {attempt.unitTitle}
-            </h1>
+            <div>
+              <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+                <span>Test natijalari</span>
+                <span aria-hidden="true">·</span>
+                <span className="text-indigo-600 dark:text-indigo-400">Unit {attempt.unitNumber}</span>
+                <span aria-hidden="true">·</span>
+                <span className="font-mono-tabular">
+                  Sarflangan vaqt: {formatCountdown(attempt.durationSeconds)}
+                </span>
+              </div>
 
-            <div
-              data-testid="result-student-info"
-              className="mt-2 flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-200"
-            >
-              <span>{student.fullName}</span>
-              <span aria-hidden="true" className="text-slate-400">·</span>
-              <span className="font-mono-tabular text-sky-700 dark:text-sky-400">
-                {student.className} sinf
-              </span>
-              {previousSameUnit && (
-                <>
-                  <span aria-hidden="true" className="text-slate-400">·</span>
-                  <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
-                    Oldingi urinishga nisbatan:{' '}
-                  </span>
-                  <span className="text-xs">
-                    <TrendBadge
-                      delta={unitDelta}
-                      trend={unitTrend}
-                      initialLabel="Birinchi urinish"
-                    />
-                  </span>
-                </>
-              )}
+              <h1 className="font-display mt-1.5 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-50">
+                {attempt.unitTitle}
+              </h1>
+
+              <div
+                data-testid="result-student-info"
+                className="mt-2 flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-200"
+              >
+                <span>{student.fullName}</span>
+                <span aria-hidden="true" className="text-slate-400">·</span>
+                <span className="font-mono-tabular text-indigo-600 dark:text-indigo-400">
+                  {student.className} sinf
+                </span>
+                {previousSameUnit && (
+                  <>
+                    <span aria-hidden="true" className="text-slate-400">·</span>
+                    <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
+                      Oldingi urinishga nisbatan:{' '}
+                    </span>
+                    <span className="text-xs">
+                      <TrendBadge
+                        delta={unitDelta}
+                        trend={unitTrend}
+                        initialLabel="Birinchi urinish"
+                      />
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
@@ -209,7 +230,7 @@ export function ResultsView({
             <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
               Natija foizi
             </span>
-            <span className="font-mono-tabular text-4xl font-bold text-slate-900 dark:text-white">
+            <span className="font-mono-tabular text-4xl font-bold text-amber-600 dark:text-amber-400">
               {attempt.percentage}%
             </span>
           </div>
@@ -217,7 +238,7 @@ export function ResultsView({
 
         {/* Metrics Grid */}
         <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-500/30 dark:bg-emerald-950/25 dark:shadow-[inset_0_1px_0_rgba(167,243,208,0.12)]">
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-500/25 dark:bg-emerald-950/20">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
               <CheckCircle2 className="h-4 w-4" />
               <span>Toʻgʻri javoblar</span>
@@ -230,35 +251,35 @@ export function ResultsView({
             </div>
           </div>
 
-          <div className="rounded-xl border border-red-200 bg-red-50/70 p-4 dark:border-red-500/30 dark:bg-red-950/25 dark:shadow-[inset_0_1px_0_rgba(254,202,202,0.1)]">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-red-800 dark:text-red-300">
+          <div className="rounded-xl border border-rose-200 bg-rose-50/70 p-4 dark:border-rose-500/25 dark:bg-rose-950/20">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-rose-800 dark:text-rose-300">
               <XCircle className="h-4 w-4" />
               <span>Xato javoblar</span>
             </div>
             <div
               data-testid="result-wrong-count"
-              className="font-mono-tabular mt-1.5 text-2xl font-bold text-red-900 dark:text-red-200"
+              className="font-mono-tabular mt-1.5 text-2xl font-bold text-rose-900 dark:text-rose-200"
             >
               {attempt.wrongCount}
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-slate-50/90 p-4 dark:border-white/10 dark:bg-black/40 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-            <div className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+          <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-4 dark:border-amber-500/25 dark:bg-amber-950/20">
+            <div className="text-xs font-semibold text-amber-800 dark:text-amber-300">
               Ushbu test bali
             </div>
-            <div className="font-mono-tabular mt-1.5 text-2xl font-bold text-slate-900 dark:text-white">
+            <div className="font-mono-tabular mt-1.5 text-2xl font-bold text-amber-900 dark:text-amber-200">
               +{attempt.pointsEarned}
             </div>
           </div>
 
-          <div className="rounded-xl border border-sky-200 bg-sky-50/70 p-4 dark:border-sky-500/30 dark:bg-sky-950/25 dark:shadow-[inset_0_1px_0_rgba(186,230,253,0.12)]">
-            <div className="text-xs font-semibold text-sky-800 dark:text-sky-300">
+          <div className="rounded-xl border border-indigo-200 bg-indigo-50/70 p-4 dark:border-indigo-500/25 dark:bg-indigo-950/20">
+            <div className="text-xs font-semibold text-indigo-800 dark:text-indigo-300">
               Umumiy ball
             </div>
             <div
               data-testid="result-total-points"
-              className="font-mono-tabular mt-1.5 text-2xl font-bold text-sky-900 dark:text-sky-200"
+              className="font-mono-tabular mt-1.5 text-2xl font-bold text-indigo-900 dark:text-indigo-200"
             >
               {student.totalPoints}
             </div>

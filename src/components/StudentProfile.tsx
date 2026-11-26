@@ -12,6 +12,7 @@ import {
   UserCheck,
   X,
 } from 'lucide-react';
+import rewardResultsCrestImg from '../assets/images/reward_results_crest_1795706130483.jpg';
 import type { StudentProfile as StudentProfileType, TestAttempt } from '../types/quiz';
 import { ALL_UNITS } from '../data/units';
 import {
@@ -50,6 +51,7 @@ export function StudentProfile({
   const [drillIdx, setDrillIdx] = useState(0);
   const [drillSelectedOpt, setDrillSelectedOpt] = useState<string | null>(null);
   const [drillScore, setDrillScore] = useState(0);
+  const [profileImgFailed, setProfileImgFailed] = useState(false);
 
   const analytics = useMemo(
     () => analyzeStudentProgress(student.attempts),
@@ -144,30 +146,47 @@ export function StudentProfile({
       {/* Profile Summary */}
       <section className="gloss-panel rounded-2xl p-6 sm:p-8">
         <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-center">
-          <div>
-            <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
-              Shaxsiy profil · {student.className} sinf
+          <div className="flex items-center gap-4">
+            <div className="hidden h-20 w-24 shrink-0 overflow-hidden rounded-xl border border-slate-200/80 sm:block dark:border-slate-700/40">
+              {!profileImgFailed ? (
+                <img
+                  src={rewardResultsCrestImg}
+                  alt="Shaxsiy yutuqlar nishoni"
+                  referrerPolicy="no-referrer"
+                  onError={() => setProfileImgFailed(true)}
+                  className="h-full w-full object-cover object-center"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-900 via-slate-800 to-emerald-900">
+                  <Award className="h-7 w-7 text-amber-300" />
+                </div>
+              )}
             </div>
-            <h1 className="font-display mt-1 text-2xl font-bold text-slate-900 sm:text-3xl dark:text-white">
-              {student.fullName}
-            </h1>
+            <div>
+              <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                Shaxsiy profil · <span className="text-indigo-600 dark:text-indigo-400">{student.className} sinf</span>
+              </div>
+              <h1 className="font-display mt-1 text-2xl font-bold text-slate-900 sm:text-3xl dark:text-slate-50">
+                {student.fullName}
+              </h1>
+            </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-5 border-t border-slate-200/80 pt-4 sm:border-t-0 sm:pt-0 sm:text-right dark:border-white/10">
+          <div className="grid grid-cols-3 gap-5 border-t border-slate-200/80 pt-4 sm:border-t-0 sm:pt-0 sm:text-right dark:border-slate-700/40">
             <div>
-              <div className="font-mono-tabular text-2xl font-bold text-sky-700 dark:text-sky-400">
+              <div className="font-mono-tabular text-2xl font-bold text-indigo-600 dark:text-indigo-400">
                 {student.totalPoints}
               </div>
               <div className="text-xs text-slate-500 dark:text-slate-400">Umumiy ball</div>
             </div>
             <div>
-              <div className="font-mono-tabular text-2xl font-bold text-slate-900 dark:text-white">
+              <div className="font-mono-tabular text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                 {student.completedUnits.length}/{TOTAL_UNITS}
               </div>
               <div className="text-xs text-slate-500 dark:text-slate-400">Unitlar</div>
             </div>
             <div>
-              <div className="font-mono-tabular text-2xl font-bold text-slate-900 dark:text-white">
+              <div className="font-mono-tabular text-2xl font-bold text-amber-600 dark:text-amber-400">
                 {student.averagePercentage}%
               </div>
               <div className="text-xs text-slate-500 dark:text-slate-400">Oʻrtacha</div>
@@ -176,7 +195,7 @@ export function StudentProfile({
         </div>
 
         {/* Mastery Rank Progress Strip */}
-        <div className="mt-5 rounded-xl border border-slate-200/80 bg-slate-50/80 p-3.5 dark:border-white/10 dark:bg-black/35">
+        <div className="mt-5 rounded-xl border border-amber-200/80 bg-amber-50/50 p-3.5 dark:border-amber-500/20 dark:bg-[#0e1422]">
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
             <span className="inline-flex items-center gap-1.5 font-semibold text-slate-800 dark:text-slate-100">
               <Sparkles className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
@@ -190,9 +209,9 @@ export function StudentProfile({
                 : 'Eng yuqori daraja zabt etildi!'}
             </span>
           </div>
-          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
+          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-sky-500 to-cyan-400 transition-[width] duration-300 dark:shadow-[0_0_12px_rgba(56,189,248,0.5)]"
+              className="h-full rounded-full bg-gradient-to-r from-amber-500 via-orange-400 to-emerald-400 transition-[width] duration-300"
               style={{ width: `${masteryRank.progressPercent}%` }}
             />
           </div>
@@ -200,22 +219,22 @@ export function StudentProfile({
 
         {/* Personal Growth KPIs + Chart */}
         {student.attempts.length > 0 && (
-          <div className="mt-6 space-y-5 border-t border-slate-200/80 pt-6 dark:border-white/10">
+          <div className="mt-6 space-y-5 border-t border-slate-200/80 pt-6 dark:border-slate-700/40">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-3.5 dark:border-emerald-500/30 dark:bg-emerald-950/25">
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-3.5 dark:border-emerald-500/25 dark:bg-emerald-950/20">
                 <div className="text-xs text-emerald-800 dark:text-emerald-300">Eng yuqori</div>
                 <div className="font-mono-tabular mt-1 text-xl font-bold text-emerald-900 dark:text-emerald-200">
                   {analytics.bestAttempt?.percentage ?? 0}%
                 </div>
               </div>
-              <div className="rounded-xl border border-slate-200 bg-slate-50/90 p-3.5 dark:border-white/10 dark:bg-black/35">
-                <div className="text-xs text-slate-500 dark:text-slate-400">Eng past</div>
-                <div className="font-mono-tabular mt-1 text-xl font-bold text-slate-900 dark:text-white">
+              <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3.5 dark:border-amber-500/25 dark:bg-amber-950/20">
+                <div className="text-xs text-amber-800 dark:text-amber-300">Eng past</div>
+                <div className="font-mono-tabular mt-1 text-xl font-bold text-amber-900 dark:text-amber-200">
                   {analytics.worstAttempt?.percentage ?? 0}%
                 </div>
               </div>
-              <div className="rounded-xl border border-slate-200 bg-slate-50/90 p-3.5 dark:border-white/10 dark:bg-black/35">
-                <div className="text-xs text-slate-500 dark:text-slate-400">Oʻsish / Tushish</div>
+              <div className="rounded-xl border border-indigo-200 bg-indigo-50/60 p-3.5 dark:border-indigo-500/25 dark:bg-indigo-950/20">
+                <div className="text-xs text-indigo-800 dark:text-indigo-300">Oʻsish / Tushish</div>
                 <div className="mt-1 font-mono-tabular text-base font-bold">
                   <TrendBadge
                     delta={analytics.overallGrowthPct}
@@ -224,14 +243,14 @@ export function StudentProfile({
                   />
                 </div>
               </div>
-              <div className="rounded-xl border border-slate-200 bg-slate-50/90 p-3.5 dark:border-white/10 dark:bg-black/35">
+              <div className="rounded-xl border border-slate-200 bg-slate-50/90 p-3.5 dark:border-slate-700/40 dark:bg-[#0e1422]">
                 <div className="text-xs text-slate-500 dark:text-slate-400">Jami toʻgʻri / xato</div>
-                <div className="font-mono-tabular mt-1 text-lg font-bold text-slate-900 dark:text-white">
+                <div className="font-mono-tabular mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">
                   <span className="text-emerald-700 dark:text-emerald-400">
                     {analytics.totalCorrect}
                   </span>
                   <span className="mx-1 text-slate-400">/</span>
-                  <span className="text-red-700 dark:text-red-400">
+                  <span className="text-rose-700 dark:text-rose-400">
                     {analytics.totalWrong}
                   </span>
                 </div>
@@ -239,7 +258,7 @@ export function StudentProfile({
             </div>
 
             {analytics.chronological.length >= 2 && (
-              <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-white/10 dark:bg-black/35">
+              <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-slate-700/40 dark:bg-[#0e1422]">
                 <div className="mb-2 flex items-center justify-between text-xs font-semibold text-slate-600 dark:text-slate-400">
                   <span>Natijalaringiz oʻsishi va tushishi ({analytics.totalAttempts} ta test)</span>
                 </div>
@@ -256,7 +275,7 @@ export function StudentProfile({
       <section className="mt-8">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <div
-            className="inline-flex rounded-xl border border-slate-200 bg-slate-200/70 p-1 dark:border-white/10 dark:bg-black/45"
+            className="inline-flex rounded-xl border border-slate-200 bg-slate-200/70 p-1 dark:border-slate-700/40 dark:bg-[#0e1422]"
             role="tablist"
             aria-label="Profil bo'limlari"
           >
@@ -267,7 +286,7 @@ export function StudentProfile({
               onClick={() => setActiveTab('history')}
               className={`min-h-[36px] rounded-lg px-3.5 text-xs font-semibold whitespace-nowrap transition-colors ${
                 activeTab === 'history'
-                  ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-800/90 dark:text-white dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]'
+                  ? 'bg-white text-slate-900 shadow-xs dark:bg-indigo-500/20 dark:text-indigo-200'
                   : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
               }`}
             >
@@ -280,7 +299,7 @@ export function StudentProfile({
               onClick={() => setActiveTab('mistakes')}
               className={`min-h-[36px] rounded-lg px-3.5 text-xs font-semibold whitespace-nowrap transition-colors ${
                 activeTab === 'mistakes'
-                  ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-800/90 dark:text-white dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]'
+                  ? 'bg-white text-slate-900 shadow-xs dark:bg-indigo-500/20 dark:text-indigo-200'
                   : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
               }`}
             >

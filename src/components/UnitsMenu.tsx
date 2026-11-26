@@ -1,8 +1,49 @@
 import { useMemo, useState } from 'react';
-import { CheckCircle2, Play, RotateCcw, Search } from 'lucide-react';
+import { BookOpen, CheckCircle2, Play, RotateCcw, Search } from 'lucide-react';
+import bannerUnitsAtlasImg from '../assets/images/banner_units_atlas_1795706130379.jpg';
 import type { StudentProfile, UnitData } from '../types/quiz';
 import { ALL_UNITS } from '../data/units';
 import { DEFAULT_TEST_DURATION_MINUTES } from '../utils/quizEngine';
+
+function getUnitThemeAccent(unitNumber: number): {
+  labelClass: string;
+  dotBarClass: string;
+  hoverBorderClass: string;
+} {
+  if (unitNumber <= 20) {
+    return {
+      labelClass: 'text-indigo-600 dark:text-indigo-400',
+      dotBarClass: 'bg-indigo-500/70',
+      hoverBorderClass: 'hover:border-indigo-300 dark:hover:border-indigo-400/35',
+    };
+  }
+  if (unitNumber <= 40) {
+    return {
+      labelClass: 'text-emerald-600 dark:text-emerald-400',
+      dotBarClass: 'bg-emerald-500/70',
+      hoverBorderClass: 'hover:border-emerald-300 dark:hover:border-emerald-400/35',
+    };
+  }
+  if (unitNumber <= 60) {
+    return {
+      labelClass: 'text-violet-600 dark:text-violet-400',
+      dotBarClass: 'bg-violet-500/70',
+      hoverBorderClass: 'hover:border-violet-300 dark:hover:border-violet-400/35',
+    };
+  }
+  if (unitNumber <= 80) {
+    return {
+      labelClass: 'text-amber-600 dark:text-amber-400',
+      dotBarClass: 'bg-amber-500/70',
+      hoverBorderClass: 'hover:border-amber-300 dark:hover:border-amber-400/35',
+    };
+  }
+  return {
+    labelClass: 'text-rose-600 dark:text-rose-400',
+    dotBarClass: 'bg-rose-500/70',
+    hoverBorderClass: 'hover:border-rose-300 dark:hover:border-rose-400/35',
+  };
+}
 
 interface UnitsMenuProps {
   student: StudentProfile;
@@ -34,6 +75,7 @@ export function UnitsMenu({
   const [filter, setFilter] = useState<UnitFilter>('all');
   const [rangeFilter, setRangeFilter] = useState<UnitRangeId>('all');
   const [sortBy, setSortBy] = useState<UnitSort>('number');
+  const [bannerImgFailed, setBannerImgFailed] = useState(false);
 
   const bestAttemptByUnit = useMemo(() => {
     const map = new Map<
@@ -118,73 +160,98 @@ export function UnitsMenu({
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
-      {/* Student header summary strip */}
-      <section className="gloss-panel rounded-2xl p-5 sm:p-6">
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-          <div>
-            <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
-              <span>Oʻquvchi profili</span>
-              <span aria-hidden="true">·</span>
-              <span className="font-mono-tabular font-semibold text-slate-700 dark:text-slate-200">
-                {student.className} sinf
-              </span>
+      {/* Student header summary strip with colorful atlas illustration */}
+      <section className="gloss-panel overflow-hidden rounded-2xl">
+        <div className="grid items-stretch md:grid-cols-12">
+          <div className="flex flex-col justify-between p-5 sm:p-6 md:col-span-8">
+            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+              <div>
+                <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+                  <span>Oʻquvchi profili</span>
+                  <span aria-hidden="true">·</span>
+                  <span className="font-mono-tabular font-semibold text-indigo-600 dark:text-indigo-400">
+                    {student.className} sinf
+                  </span>
+                </div>
+                <h1 className="font-display mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-50">
+                  {student.fullName}
+                </h1>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4 border-t border-slate-200/80 pt-4 sm:border-t-0 sm:pt-0 sm:text-right dark:border-slate-700/40">
+                <div>
+                  <div className="font-mono-tabular text-xl font-bold text-indigo-600 sm:text-2xl dark:text-indigo-400">
+                    {student.totalPoints}
+                  </div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">Umumiy ball</div>
+                </div>
+                <div>
+                  <div className="font-mono-tabular text-xl font-bold text-emerald-600 sm:text-2xl dark:text-emerald-400">
+                    {student.completedUnits.length}/{ALL_UNITS.length}
+                  </div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">Unit bajarildi</div>
+                </div>
+                <div>
+                  <div className="font-mono-tabular text-xl font-bold text-amber-600 sm:text-2xl dark:text-amber-400">
+                    {student.averagePercentage}%
+                  </div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">Oʻrtacha</div>
+                </div>
+              </div>
             </div>
-            <h1 className="font-display mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-white">
-              {student.fullName}
-            </h1>
+
+            {/* Course Completion Progress Bar & Next Recommended Unit CTA */}
+            <div className="mt-5 flex flex-col gap-4 border-t border-slate-200/80 pt-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700/40">
+              <div className="flex-1">
+                <div className="flex items-center justify-between text-xs font-medium text-slate-600 dark:text-slate-400">
+                  <span>Umumiy oʻzlashtirish</span>
+                  <span className="font-mono-tabular font-semibold text-slate-800 dark:text-slate-200">
+                    {student.completedUnits.length} / {ALL_UNITS.length} unit ({completionPct}%)
+                  </span>
+                </div>
+                <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-200/80 dark:bg-[#0e1422]">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-indigo-500 via-teal-500 to-emerald-500 transition-[width] duration-300"
+                    style={{ width: `${completionPct}%` }}
+                  />
+                </div>
+              </div>
+
+              {nextRecommendedUnit && (
+                <button
+                  type="button"
+                  onClick={() => onStartUnit(nextRecommendedUnit)}
+                  className="gloss-btn-primary inline-flex min-h-[40px] shrink-0 items-center justify-center gap-2 rounded-xl px-4 text-xs font-semibold whitespace-nowrap"
+                >
+                  <Play className="h-3.5 w-3.5" />
+                  <span>
+                    Davom etish: Unit {nextRecommendedUnit.unitNumber}
+                  </span>
+                </button>
+              )}
+            </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4 border-t border-slate-200/80 pt-4 sm:border-t-0 sm:pt-0 sm:text-right dark:border-white/10">
-            <div>
-              <div className="font-mono-tabular text-xl font-bold text-sky-700 sm:text-2xl dark:text-sky-400">
-                {student.totalPoints}
-              </div>
-              <div className="text-xs text-slate-500 dark:text-slate-400">Umumiy ball</div>
-            </div>
-            <div>
-              <div className="font-mono-tabular text-xl font-bold text-slate-900 sm:text-2xl dark:text-white">
-                {student.completedUnits.length}/{ALL_UNITS.length}
-              </div>
-              <div className="text-xs text-slate-500 dark:text-slate-400">Unit bajarildi</div>
-            </div>
-            <div>
-              <div className="font-mono-tabular text-xl font-bold text-slate-900 sm:text-2xl dark:text-white">
-                {student.averagePercentage}%
-              </div>
-              <div className="text-xs text-slate-500 dark:text-slate-400">Oʻrtacha</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Course Completion Progress Bar & Next Recommended Unit CTA */}
-        <div className="mt-5 flex flex-col gap-4 border-t border-slate-200/80 pt-4 sm:flex-row sm:items-center sm:justify-between dark:border-white/10">
-          <div className="flex-1">
-            <div className="flex items-center justify-between text-xs font-medium text-slate-600 dark:text-slate-400">
-              <span>Umumiy oʻzlashtirish</span>
-              <span className="font-mono-tabular font-semibold text-slate-800 dark:text-slate-200">
-                {student.completedUnits.length} / {ALL_UNITS.length} unit ({completionPct}%)
-              </span>
-            </div>
-            <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-200/80 dark:bg-black/50">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-sky-500 to-cyan-400 transition-[width] duration-300 dark:shadow-[0_0_16px_rgba(56,189,248,0.5)]"
-                style={{ width: `${completionPct}%` }}
+          {/* Right visual illustration frame */}
+          <div className="relative h-36 border-t border-slate-200/80 md:col-span-4 md:h-auto md:border-t-0 md:border-l dark:border-slate-700/40">
+            {!bannerImgFailed ? (
+              <img
+                src={bannerUnitsAtlasImg}
+                alt="English Vocabulary in Use kitoblar toʻplami"
+                referrerPolicy="no-referrer"
+                onError={() => setBannerImgFailed(true)}
+                className="h-full w-full object-cover object-center"
               />
-            </div>
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-900 via-slate-800 to-emerald-900">
+                <BookOpen className="h-10 w-10 text-amber-300" />
+              </div>
+            )}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent md:bg-gradient-to-r md:from-[#ffffff]/25 md:via-transparent dark:md:from-[#141b2b]/45"
+            />
           </div>
-
-          {nextRecommendedUnit && (
-            <button
-              type="button"
-              onClick={() => onStartUnit(nextRecommendedUnit)}
-              className="gloss-btn-secondary inline-flex min-h-[40px] shrink-0 items-center justify-center gap-2 rounded-xl px-4 text-xs font-semibold text-sky-700 whitespace-nowrap dark:text-sky-300"
-            >
-              <Play className="h-3.5 w-3.5" />
-              <span>
-                Davom etish: Unit {nextRecommendedUnit.unitNumber} ({nextRecommendedUnit.title})
-              </span>
-            </button>
-          )}
         </div>
       </section>
 
@@ -205,7 +272,7 @@ export function UnitsMenu({
 
           <div className="flex flex-wrap items-center justify-between gap-2.5">
             <div
-              className="inline-flex rounded-xl border border-slate-200 bg-slate-200/70 p-1 dark:border-white/10 dark:bg-black/45"
+              className="inline-flex rounded-xl border border-slate-200 bg-slate-200/70 p-1 dark:border-slate-700/40 dark:bg-[#0e1422]"
               role="tablist"
               aria-label="Unitlar filtri"
             >
@@ -224,7 +291,7 @@ export function UnitsMenu({
                   onClick={() => setFilter(tab.id)}
                   className={`min-h-[34px] rounded-lg px-3 py-1.5 text-xs font-semibold whitespace-nowrap shrink-0 transition-colors ${
                     filter === tab.id
-                      ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-800/90 dark:text-white dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]'
+                      ? 'bg-white text-slate-900 shadow-xs dark:bg-indigo-500/20 dark:text-indigo-200'
                       : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
                   }`}
                 >
@@ -316,15 +383,16 @@ export function UnitsMenu({
         >
           {filteredUnits.map((unit) => {
             const stats = bestAttemptByUnit.get(unit.unitNumber);
+            const theme = getUnitThemeAccent(unit.unitNumber);
             return (
               <article
                 key={unit.unitNumber}
                 data-testid={`unit-card-${unit.unitNumber}`}
-                className="gloss-card flex flex-col justify-between rounded-2xl p-5"
+                className={`gloss-card flex flex-col justify-between rounded-2xl p-5 ${theme.hoverBorderClass}`}
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
-                    <span className="font-mono-tabular font-semibold text-sky-700 dark:text-sky-400">
+                    <span className={`font-mono-tabular font-semibold ${theme.labelClass}`}>
                       Unit {String(unit.unitNumber).padStart(2, '0')}
                     </span>
                     <div className="flex items-center gap-1.5 tabular-nums">
@@ -334,7 +402,7 @@ export function UnitsMenu({
                     </div>
                   </div>
 
-                  <h2 className="mt-2 text-lg font-bold tracking-tight text-slate-900 dark:text-white">
+                  <h2 className="mt-2 text-lg font-bold tracking-tight text-slate-900 dark:text-slate-50">
                     {unit.title}
                   </h2>
                   <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
@@ -342,7 +410,7 @@ export function UnitsMenu({
                   </p>
                 </div>
 
-                <div className="mt-5 border-t border-slate-200/80 pt-4 dark:border-white/10">
+                <div className="mt-5 border-t border-slate-200/80 pt-4 dark:border-slate-700/40">
                   {stats ? (
                     <div className="mb-3 flex items-center justify-between text-xs">
                       <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-700 dark:text-emerald-400">
@@ -365,7 +433,7 @@ export function UnitsMenu({
                     onClick={() => onStartUnit(unit)}
                     className={`inline-flex min-h-[42px] w-full items-center justify-center gap-1.5 rounded-xl px-4 text-xs font-semibold whitespace-nowrap ${
                       stats
-                        ? 'gloss-btn-secondary text-slate-800 dark:text-slate-100'
+                        ? 'gloss-btn-emerald text-white'
                         : 'gloss-btn-primary text-white'
                     }`}
                   >

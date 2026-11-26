@@ -25,9 +25,9 @@ export function Header({
         <button
           type="button"
           onClick={() => onNavigate(student ? 'units' : 'login')}
-          className="font-display text-base font-bold tracking-tight text-slate-900 transition-colors hover:text-sky-600 whitespace-nowrap shrink-0 sm:text-xl dark:text-white dark:hover:text-sky-300"
+          className="font-display text-base font-bold tracking-tight text-slate-900 transition-colors hover:opacity-85 whitespace-nowrap shrink-0 sm:text-xl dark:text-slate-100"
         >
-          LexisCheck
+          Lexis<span className="text-indigo-600 dark:text-indigo-400">Check</span>
         </button>
 
         {/* Zone 2: Clean single-line navigation links */}
@@ -42,8 +42,8 @@ export function Header({
                 onClick={() => onNavigate('units')}
                 className={`whitespace-nowrap shrink-0 py-1 transition-colors ${
                   view === 'units'
-                    ? 'text-sky-700 underline decoration-sky-500/80 decoration-2 underline-offset-6 dark:text-sky-300'
-                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-300/85 dark:hover:text-white'
+                    ? 'text-indigo-600 underline decoration-indigo-500/80 decoration-2 underline-offset-6 dark:text-indigo-300'
+                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
                 }`}
               >
                 Unitlar
@@ -53,8 +53,8 @@ export function Header({
                 onClick={() => onNavigate('profile')}
                 className={`whitespace-nowrap shrink-0 py-1 transition-colors ${
                   view === 'profile'
-                    ? 'text-sky-700 underline decoration-sky-500/80 decoration-2 underline-offset-6 dark:text-sky-300'
-                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-300/85 dark:hover:text-white'
+                    ? 'text-indigo-600 underline decoration-indigo-500/80 decoration-2 underline-offset-6 dark:text-indigo-300'
+                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
                 }`}
               >
                 Profilim
@@ -66,8 +66,8 @@ export function Header({
               onClick={() => onNavigate('login')}
               className={`whitespace-nowrap shrink-0 py-1 transition-colors ${
                 view === 'login'
-                  ? 'text-sky-700 underline decoration-sky-500/80 decoration-2 underline-offset-6 dark:text-sky-300'
-                  : 'text-slate-600 hover:text-slate-900 dark:text-slate-300/85 dark:hover:text-white'
+                  ? 'text-indigo-600 underline decoration-indigo-500/80 decoration-2 underline-offset-6 dark:text-indigo-300'
+                  : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
               }`}
             >
               Kirish
@@ -78,8 +78,8 @@ export function Header({
             onClick={() => onNavigate('teacher')}
             className={`whitespace-nowrap shrink-0 py-1 transition-colors ${
               view === 'teacher'
-                ? 'text-sky-700 underline decoration-sky-500/80 decoration-2 underline-offset-6 dark:text-sky-300'
-                : 'text-slate-600 hover:text-slate-900 dark:text-slate-300/85 dark:hover:text-white'
+                ? 'text-indigo-600 underline decoration-indigo-500/80 decoration-2 underline-offset-6 dark:text-indigo-300'
+                : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
             }`}
           >
             Oʻqituvchi

@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { AlertTriangle, ArrowRight, BookOpen, Lock, Sparkles, UserCheck } from 'lucide-react';
-import heroObsidianImg from '../assets/images/hero_obsidian_lexicon_1795704967281.jpg';
+import heroWarmLibraryImg from '../assets/images/hero_library_warmth_1795706129754.jpg';
 import {
   lookupStudentProfile,
   StudentEntryError,
@@ -148,40 +148,40 @@ export function LoginScreen({
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 items-center px-4 py-8 sm:px-6 sm:py-10">
       <div className="grid w-full items-stretch gap-6 lg:grid-cols-12">
-        {/* Left editorial overview with bespoke obsidian glass showcase */}
+        {/* Left editorial overview with warm colorful vocabulary artwork */}
         <section className="gloss-panel flex flex-col justify-between overflow-hidden rounded-2xl lg:col-span-6">
-          <div className="relative h-48 w-full overflow-hidden border-b border-slate-200/80 sm:h-56 dark:border-white/10">
+          <div className="relative h-52 w-full overflow-hidden border-b border-slate-200/80 sm:h-60 dark:border-slate-700/40">
             {!heroImgFailed ? (
               <img
-                src={heroObsidianImg}
+                src={heroWarmLibraryImg}
                 alt="English Vocabulary in Use — LexisCheck lugʻat platformasi"
                 referrerPolicy="no-referrer"
                 onError={() => setHeroImgFailed(true)}
                 className="h-full w-full object-cover object-center"
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-900 via-[#0d172a] to-sky-950">
-                <BookOpen className="h-12 w-12 text-sky-400/80" />
+              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-950 via-slate-900 to-emerald-950">
+                <BookOpen className="h-12 w-12 text-amber-300" />
               </div>
             )}
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute inset-0 bg-gradient-to-t from-white via-white/30 to-transparent dark:from-[#0e1320] dark:via-[#0e1320]/45 dark:to-transparent"
+              className="pointer-events-none absolute inset-0 bg-gradient-to-t from-white/90 via-white/15 to-transparent dark:from-[#141b2b]/90 dark:via-[#141b2b]/20 dark:to-transparent"
             />
           </div>
 
           <div className="flex flex-1 flex-col justify-between p-6 sm:p-8">
             <div className="space-y-4">
-              <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-400">
-                <BookOpen className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+              <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-300">
+                <BookOpen className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                 <span>English Vocabulary in Use</span>
                 <span aria-hidden="true">·</span>
-                <span>Upper-Intermediate</span>
+                <span className="text-indigo-700 dark:text-indigo-300">Upper-Intermediate</span>
                 <span aria-hidden="true">·</span>
                 <span>1–{TOTAL_UNITS}-unitlar</span>
               </div>
 
-              <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl [text-wrap:balance] dark:text-white">
+              <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl [text-wrap:balance] dark:text-slate-50">
                 Lugʻat bilimini aniq va adolatli tekshirish tizimi
               </h1>
 
@@ -191,9 +191,9 @@ export function LoginScreen({
               </p>
             </div>
 
-            <div className="mt-7 grid grid-cols-3 gap-4 border-t border-slate-200/80 pt-5 dark:border-white/10">
+            <div className="mt-7 grid grid-cols-3 gap-4 border-t border-slate-200/80 pt-5 dark:border-slate-700/40">
               <div>
-                <div className="font-mono-tabular text-2xl font-bold text-slate-900 dark:text-white">
+                <div className="font-mono-tabular text-2xl font-bold text-indigo-600 dark:text-indigo-400">
                   {TOTAL_UNITS}
                 </div>
                 <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
@@ -201,7 +201,7 @@ export function LoginScreen({
                 </div>
               </div>
               <div>
-                <div className="font-mono-tabular text-2xl font-bold text-sky-600 dark:text-sky-400">
+                <div className="font-mono-tabular text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                   30+
                 </div>
                 <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
@@ -209,7 +209,7 @@ export function LoginScreen({
                 </div>
               </div>
               <div>
-                <div className="font-mono-tabular text-2xl font-bold text-slate-900 dark:text-white">
+                <div className="font-mono-tabular text-2xl font-bold text-amber-600 dark:text-amber-400">
                   {formatCountdown(testDurationMinutes * 60)}
                 </div>
                 <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
@@ -259,7 +259,7 @@ export function LoginScreen({
                   <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                     Sinfni tanlang
                   </span>
-                  <span className="font-mono-tabular text-sm font-semibold text-sky-700 dark:text-sky-400">
+                  <span className="font-mono-tabular text-sm font-semibold text-indigo-600 dark:text-indigo-300">
                     Tanlangan: {selectedClass}
                   </span>
                 </div>
@@ -304,7 +304,7 @@ export function LoginScreen({
                         }}
                         className={`min-h-[44px] rounded-xl text-sm font-semibold tabular-nums ${
                           active
-                            ? 'border border-sky-500/70 bg-sky-50 text-sky-800 shadow-xs dark:border-sky-400/60 dark:bg-sky-500/15 dark:text-sky-300 dark:shadow-[inset_0_1px_0_rgba(186,230,253,0.22),0_0_20px_-6px_rgba(56,189,248,0.45)]'
+                            ? 'border border-indigo-600 bg-indigo-50 text-indigo-800 dark:border-indigo-400/70 dark:bg-indigo-500/20 dark:text-indigo-200'
                             : 'gloss-btn-secondary text-slate-700 dark:text-slate-300'
                         }`}
                       >
@@ -434,7 +434,7 @@ export function LoginScreen({
             <button
               type="button"
               onClick={onOpenTeacher}
-              className="font-semibold text-sky-700 hover:underline dark:text-sky-400"
+              className="font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
             >
               Oʻqituvchi paneli
             </button>

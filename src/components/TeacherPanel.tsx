@@ -433,21 +433,21 @@ export function TeacherPanel({
 
       {/* KPI Row */}
       <section className="mt-6 grid grid-cols-3 gap-4">
-        <div className="gloss-card rounded-2xl p-4 sm:p-5">
-          <div className="text-xs text-slate-500 dark:text-slate-400">Oʻquvchilar</div>
-          <div className="font-mono-tabular mt-1 text-2xl font-bold text-slate-900 dark:text-white">
+        <div className="gloss-card rounded-2xl border-indigo-200/70 p-4 sm:p-5 dark:border-indigo-500/25">
+          <div className="text-xs font-medium text-indigo-700 dark:text-indigo-300">Oʻquvchilar</div>
+          <div className="font-mono-tabular mt-1 text-2xl font-bold text-slate-900 dark:text-slate-50">
             {filteredStudents.length}
           </div>
         </div>
-        <div className="gloss-card rounded-2xl p-4 sm:p-5">
-          <div className="text-xs text-slate-500 dark:text-slate-400">Topshirilgan testlar</div>
-          <div className="font-mono-tabular mt-1 text-2xl font-bold text-slate-900 dark:text-white">
+        <div className="gloss-card rounded-2xl border-emerald-200/70 p-4 sm:p-5 dark:border-emerald-500/25">
+          <div className="text-xs font-medium text-emerald-700 dark:text-emerald-300">Topshirilgan testlar</div>
+          <div className="font-mono-tabular mt-1 text-2xl font-bold text-slate-900 dark:text-slate-50">
             {totalAttempts}
           </div>
         </div>
-        <div className="gloss-card rounded-2xl p-4 sm:p-5">
-          <div className="text-xs text-slate-500 dark:text-slate-400">Oʻrtacha natija</div>
-          <div className="font-mono-tabular mt-1 text-2xl font-bold text-sky-700 dark:text-sky-400">
+        <div className="gloss-card rounded-2xl border-amber-200/70 p-4 sm:p-5 dark:border-amber-500/25">
+          <div className="text-xs font-medium text-amber-700 dark:text-amber-300">Oʻrtacha natija</div>
+          <div className="font-mono-tabular mt-1 text-2xl font-bold text-amber-600 dark:text-amber-400">
             {avgClassScore}%
           </div>
         </div>
@@ -508,7 +508,7 @@ export function TeacherPanel({
       {/* View Mode Switch: Students List vs Class & Hardest Questions */}
       <div className="mt-5 flex items-center justify-between gap-3">
         <div
-          className="inline-flex rounded-xl border border-slate-200 bg-slate-200/70 p-1 dark:border-white/10 dark:bg-black/45"
+          className="inline-flex rounded-xl border border-slate-200 bg-slate-200/70 p-1 dark:border-slate-700/40 dark:bg-[#0e1422]"
           role="tablist"
           aria-label="O'qituvchi ko'rinishlari"
         >
@@ -519,7 +519,7 @@ export function TeacherPanel({
             onClick={() => setTeacherTab('students')}
             className={`min-h-[36px] rounded-lg px-3.5 text-xs font-semibold whitespace-nowrap transition-colors ${
               teacherTab === 'students'
-                ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-800/90 dark:text-white dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]'
+                ? 'bg-white text-slate-900 shadow-xs dark:bg-indigo-500/20 dark:text-indigo-200'
                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
             }`}
           >
@@ -532,7 +532,7 @@ export function TeacherPanel({
             onClick={() => setTeacherTab('insights')}
             className={`min-h-[36px] rounded-lg px-3.5 text-xs font-semibold whitespace-nowrap transition-colors ${
               teacherTab === 'insights'
-                ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-800/90 dark:text-white dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]'
+                ? 'bg-white text-slate-900 shadow-xs dark:bg-indigo-500/20 dark:text-indigo-200'
                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
             }`}
           >
@@ -989,7 +989,7 @@ export function TeacherPanel({
                 }}
                 className={`min-h-[34px] rounded-lg px-3 text-xs font-semibold transition-colors ${
                   passwordTab === 'teacher'
-                    ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-800/90 dark:text-white dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]'
+                    ? 'bg-white text-slate-900 shadow-xs dark:bg-indigo-500/20 dark:text-indigo-200'
                     : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
                 }`}
               >
@@ -1006,7 +1006,7 @@ export function TeacherPanel({
                 }}
                 className={`min-h-[34px] rounded-lg px-3 text-xs font-semibold transition-colors ${
                   passwordTab === 'cheater'
-                    ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-800/90 dark:text-white dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]'
+                    ? 'bg-white text-slate-900 shadow-xs dark:bg-indigo-500/20 dark:text-indigo-200'
                     : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
                 }`}
               >

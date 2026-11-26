@@ -81,8 +81,8 @@ export function ProgressLineChart({
     >
       <defs>
         <linearGradient id="lexisChartFill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.28" />
-          <stop offset="100%" stopColor="#38bdf8" stopOpacity="0.01" />
+          <stop offset="0%" stopColor="#6366f1" stopOpacity="0.24" />
+          <stop offset="100%" stopColor="#10b981" stopOpacity="0.02" />
         </linearGradient>
       </defs>
 
@@ -96,7 +96,7 @@ export function ProgressLineChart({
               x2={width - padRight}
               y2={gy}
               stroke="currentColor"
-              className="text-slate-200 dark:text-white/10"
+              className="text-slate-200 dark:text-slate-700/50"
               strokeDasharray="3 3"
             />
             <text
@@ -119,7 +119,7 @@ export function ProgressLineChart({
         strokeWidth="2.5"
         strokeLinejoin="round"
         strokeLinecap="round"
-        className="text-sky-600 dark:text-sky-400"
+        className="text-indigo-600 dark:text-indigo-400"
         points={polyline}
       />
 
@@ -128,12 +128,12 @@ export function ProgressLineChart({
           item.overallTrend === 'up'
             ? 'fill-emerald-500 dark:fill-emerald-400'
             : item.overallTrend === 'down'
-              ? 'fill-red-500 dark:fill-red-400'
-              : 'fill-sky-500 dark:fill-sky-400';
+              ? 'fill-rose-500 dark:fill-rose-400'
+              : 'fill-indigo-500 dark:fill-indigo-400';
 
         return (
           <g key={item.attempt.id}>
-            <circle cx={x} cy={y} r="7" className="fill-sky-400/15" />
+            <circle cx={x} cy={y} r="6" className="fill-indigo-400/15" />
             <circle cx={x} cy={y} r="4" className={dotColor} />
             <text
               x={x}
