@@ -3,7 +3,30 @@ import path from 'node:path';
 import { createServer as createViteServer } from 'vite';
 import { AppStore } from './src/server/store';
 
-const PORT = Number(process.env.PORT || 3000);
+function getCliArg(flag: string): string | undefined {
+  const args = process.argv.slice(2);
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === flag && args[i + 1] && !args[i + 1].startsWith('--')) {
+      return args[i + 1];
+    }
+    if (arg.startsWith(`${flag}=`)) {
+      return arg.slice(flag.length + 1);
+    }
+  }
+  return undefined;
+}
+
+const cliPort = getCliArg('--port');
+const cliHost = getCliArg('--host');
+const envPort =
+  process.env.PORT &&
+  process.env.NGINX_PORT &&
+  process.env.PORT === process.env.NGINX_PORT
+    ? process.env.DEFAULT_APP_PORT || '3000'
+    : process.env.PORT;
+const PORT = Number(cliPort || envPort || 3000);
+const HOST = cliHost || '0.0.0.0';
 const DB_PATH = path.resolve(process.cwd(), '.data', 'vocab-app.json');
 
 async function startServer() {
@@ -226,9 +249,12 @@ async function startServer() {
     app.use(vite.middlewares);
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`LexisCheck server running on http://localhost:${PORT}`);
+  app.listen(PORT, HOST, () => {
+    console.log(`LexisCheck server running on http://${HOST}:${PORT}`);
   });
 }
 
-startServer();
+startServer().catch((err) => {
+  console.error('Failed to start LexisCheck server:', err);
+  process.exit(1);
+});
