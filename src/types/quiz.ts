@@ -55,6 +55,33 @@ export interface TestAttempt {
   mistakes: MistakeRecord[];
 }
 
+export type CheatEventType = 'fullscreen_exit' | 'tab_switch' | 'away_return';
+
+export interface UnitCheatSummary {
+  unitNumber: number;
+  unitTitle: string;
+  exitCount: number;
+  tabSwitchCount: number;
+  totalAwaySeconds: number;
+  aiSuspected: boolean;
+  lastEventAt: string;
+}
+
+export interface StudentCheatOverview {
+  totalExits: number;
+  totalTabSwitches: number;
+  totalAwaySeconds: number;
+  flaggedUnitsCount: number;
+  aiSuspected: boolean;
+}
+
+export interface RecordCheatEventPayload {
+  unitNumber: number;
+  unitTitle: string;
+  eventType: CheatEventType;
+  awaySeconds?: number;
+}
+
 export interface StudentProfile {
   id: string;
   fullName: string;
@@ -64,6 +91,8 @@ export interface StudentProfile {
   studiedUnits: number[];
   averagePercentage: number;
   attempts: TestAttempt[];
+  cheatLogs: UnitCheatSummary[];
+  cheatOverview: StudentCheatOverview;
   createdAt: string;
 }
 

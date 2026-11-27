@@ -1,8 +1,14 @@
 import type {
+  RecordCheatEventPayload,
   StudentProfile,
   StudentSummaryForTeacher,
   TestAttempt,
+  UnitCheatSummary,
 } from '../types/quiz';
+import {
+  applyCheatEventToLogs,
+  summarizeStudentCheatLogs,
+} from './antiCheat';
 import {
   buildStudentKey,
   buildStudentTokenBagKey,
@@ -31,8 +37,6 @@ export class LocalStudentEntryError extends Error {
 const LOCAL_DB_KEY = 'lexischeck_local_db_v1';
 const DEFAULT_TEACHER_HASH =
   'lexischeck_salt_2026:26892f86af0f5b04678fc3c063f9caab08b4356ab0e601a48ab244f026fcdb48';
-const DEFAULT_CHEATER_CODE_HASH =
-  'lexischeck_cheater_salt_2026:478f38966c399d456d7a573c075c9a074a16d516472afe548e5fc531a0179e93';
 
 interface StoredLocalStudent {
   id: string;
@@ -42,6 +46,7 @@ interface StoredLocalStudent {
   secretToken: string;
   studiedUnits?: number[];
   attempts: TestAttempt[];
+  cheatLogs?: UnitCheatSummary[];
   createdAt: string;
 }
 
@@ -122,10 +127,6 @@ function loadDb(storage: StorageLike): LocalDatabase {
         const validatedTimer = validateTestDurationMinutes(parsed.testDurationMinutes);
         return {
           teacherPasswordHash: parsed.teacherPasswordHash,
-          cheaterCodeHash:
-            typeof parsed.cheaterCodeHash === 'string' && parsed.cheaterCodeHash.includes(':')
-              ? parsed.cheaterCodeHash
-              : DEFAULT_CHEATER_CODE_HASH,
           testDurationMinutes: validatedTimer.ok
             ? validatedTimer.minutes
             : DEFAULT_TEST_DURATION_MINUTES,
@@ -141,7 +142,6 @@ function loadDb(storage: StorageLike): LocalDatabase {
   }
   const initial: LocalDatabase = {
     teacherPasswordHash: DEFAULT_TEACHER_HASH,
-    cheaterCodeHash: DEFAULT_CHEATER_CODE_HASH,
     testDurationMinutes: DEFAULT_TEST_DURATION_MINUTES,
     teacherTokens: [],
     students: [],
@@ -164,6 +164,12 @@ function toProfile(student: StoredLocalStudent): StudentProfile {
   );
   for (const u of agg.completedUnits) studiedSet.add(u);
 
+  const cheatLogs: UnitCheatSummary[] = Array.isArray(student.cheatLogs)
+    ? [...student.cheatLogs].sort(
+        (a, b) => new Date(b.lastEventAt).getTime() - new Date(a.lastEventAt).getTime(),
+      )
+    : [];
+
   return {
     id: student.id,
     fullName: student.fullName,
@@ -173,6 +179,8 @@ function toProfile(student: StoredLocalStudent): StudentProfile {
     studiedUnits: Array.from(studiedSet).sort((a, b) => a - b),
     averagePercentage: agg.averagePercentage,
     attempts: sortedAttempts,
+    cheatLogs,
+    cheatOverview: summarizeStudentCheatLogs(cheatLogs),
     createdAt: student.createdAt,
   };
 }
@@ -248,6 +256,7 @@ export function localEnterStudent(
     secretToken: randomToken(24),
     studiedUnits: [],
     attempts: [],
+    cheatLogs: [],
     createdAt: new Date().toISOString(),
   };
   db.students.push(created);
@@ -388,6 +397,22 @@ export function localCompleteUnitStudy(
   return toProfile(found);
 }
 
+export function localRecordCheatEvent(
+  token: string,
+  payload: RecordCheatEventPayload,
+  customStorage?: StorageLike,
+): StudentProfile {
+  const storage = getStorage(customStorage);
+  const db = loadDb(storage);
+  const found = db.students.find((s) => s.secretToken === token);
+  if (!found) {
+    throw new Error("O'quvchi sessiyasi topilmadi.");
+  }
+  found.cheatLogs = applyCheatEventToLogs(found.cheatLogs, payload);
+  saveDb(storage, db);
+  return toProfile(found);
+}
+
 export async function localLoginTeacher(
   password: string,
   customStorage?: StorageLike,
@@ -451,49 +476,26 @@ export async function localUpdateTeacherPassword(
   saveDb(storage, db);
 }
 
-export async function localVerifyCheaterCode(
-  code: string,
-  customStorage?: StorageLike,
-): Promise<boolean> {
-  const trimmed = code.trim();
-  if (!trimmed) return false;
-  const storage = getStorage(customStorage);
-  const db = loadDb(storage);
-  const hash = db.cheaterCodeHash || DEFAULT_CHEATER_CODE_HASH;
-  return verifyTeacherPassword(trimmed, hash);
-}
-
-export async function localUpdateCheaterCode(
+export function localClearStudentCheatLogs(
   token: string,
-  oldCode: string,
-  newCode: string,
-  confirmCode: string,
+  studentId: string,
   customStorage?: StorageLike,
-): Promise<void> {
+): StudentSummaryForTeacher {
   const storage = getStorage(customStorage);
   const db = loadDb(storage);
   if (!db.teacherTokens.includes(token)) {
-    throw new Error("O'qituvchi sessiyasi yaroqsiz. Qaytadan kiring.");
+    throw new Error("Ruxsat yo'q.");
   }
-  const oldTrimmed = oldCode.trim();
-  const newTrimmed = newCode.trim();
-  const confirmTrimmed = confirmCode.trim();
-  const currentHash = db.cheaterCodeHash || DEFAULT_CHEATER_CODE_HASH;
-
-  if (!oldTrimmed || !(await verifyTeacherPassword(oldTrimmed, currentHash))) {
-    throw new Error("Eski cheater paroli noto'g'ri kiritildi.");
+  const student = db.students.find((s) => s.id === studentId);
+  if (!student) {
+    throw new Error("O'quvchi topilmadi.");
   }
-  if (newTrimmed.length < 4) {
-    throw new Error("Yangi cheater paroli kamida 4 ta belgidan iborat bo'lishi kerak.");
-  }
-  if (newTrimmed !== confirmTrimmed) {
-    throw new Error('Yangi cheater paroli va tasdiqlash paroli bir-biriga mos kelmadi.');
-  }
-  if (newTrimmed === oldTrimmed) {
-    throw new Error('Yangi cheater paroli eski paroldan farq qilishi kerak.');
-  }
-  db.cheaterCodeHash = await hashTeacherPassword(newTrimmed);
+  student.cheatLogs = [];
   saveDb(storage, db);
+  const profile = toProfile(student);
+  const lastActiveAt =
+    profile.attempts.length > 0 ? profile.attempts[0].completedAt : student.createdAt;
+  return { ...profile, lastActiveAt };
 }
 
 export function localDeleteStudent(

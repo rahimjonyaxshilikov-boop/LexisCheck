@@ -1,9 +1,11 @@
 import type {
+  RecordCheatEventPayload,
   StudentProfile,
   StudentSummaryForTeacher,
   TestAttempt,
 } from '../types/quiz';
 import {
+  localClearStudentCheatLogs,
   localCompleteUnitStudy,
   localDeleteStudent,
   localEnterStudent,
@@ -12,11 +14,10 @@ import {
   localGetTestDurationMinutes,
   localLoginTeacher,
   localLookupStudent,
+  localRecordCheatEvent,
   localSubmitAttempt,
-  localUpdateCheaterCode,
   localUpdateTeacherPassword,
   localUpdateTestDurationMinutes,
-  localVerifyCheaterCode,
 } from './localFallbackStore';
 import { DEFAULT_TEST_DURATION_MINUTES } from './quizEngine';
 
@@ -349,47 +350,57 @@ export async function deleteStudentByTeacher(studentId: string): Promise<void> {
   }
 }
 
-export async function verifyCheaterCode(code: string): Promise<boolean> {
+export async function recordCheatEvent(
+  payload: RecordCheatEventPayload,
+): Promise<StudentProfile | null> {
+  const token = getSavedStudentToken();
+  if (!token) return null;
   try {
-    const { ok } = await fetchBackendJson('/api/anticheat/unlock', {
+    const { ok, data } = await fetchBackendJson('/api/student/anticheat-event', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code }),
+      keepalive: true,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-student-token': token,
+      },
+      body: JSON.stringify(payload),
     });
-    return ok;
+    if (!ok) return null;
+    return data.profile as StudentProfile;
   } catch (err) {
     if (err instanceof BackendUnavailableError) {
-      return localVerifyCheaterCode(code);
+      try {
+        return localRecordCheatEvent(token, payload);
+      } catch {
+        return null;
+      }
     }
-    return false;
+    return null;
   }
 }
 
-export async function updateCheaterCode(
-  oldCode: string,
-  newCode: string,
-  confirmCode: string,
-): Promise<void> {
+export async function clearStudentCheatLogsByTeacher(
+  studentId: string,
+): Promise<StudentSummaryForTeacher | null> {
   const token = getSavedTeacherToken();
   if (!token) {
     throw new Error("O'qituvchi sessiyasi topilmadi.");
   }
   try {
-    const { ok, data } = await fetchBackendJson('/api/teacher/change-cheater-code', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-teacher-token': token,
+    const { ok, data } = await fetchBackendJson(
+      `/api/teacher/student/${encodeURIComponent(studentId)}/cheat-logs`,
+      {
+        method: 'DELETE',
+        headers: { 'x-teacher-token': token },
       },
-      body: JSON.stringify({ oldCode, newCode, confirmCode }),
-    });
+    );
     if (!ok) {
-      throw new Error((data.error as string) || "Cheater parolini yangilab bo'lmadi.");
+      throw new Error((data.error as string) || "Nazorat yozuvlarini tozalab bo'lmadi.");
     }
+    return (data.student as StudentSummaryForTeacher) ?? null;
   } catch (err) {
     if (err instanceof BackendUnavailableError) {
-      await localUpdateCheaterCode(token, oldCode, newCode, confirmCode);
-      return;
+      return localClearStudentCheatLogs(token, studentId);
     }
     throw err;
   }

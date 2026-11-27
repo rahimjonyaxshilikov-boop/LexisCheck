@@ -2,10 +2,16 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import type {
+  RecordCheatEventPayload,
   StudentProfile,
   StudentSummaryForTeacher,
   TestAttempt,
+  UnitCheatSummary,
 } from '../types/quiz';
+import {
+  applyCheatEventToLogs,
+  summarizeStudentCheatLogs,
+} from '../utils/antiCheat';
 import {
   buildStudentKey,
   buildStudentTokenBagKey,
@@ -21,7 +27,6 @@ import {
 } from '../utils/quizEngine';
 
 const DEFAULT_TEACHER_PASSWORD = 'Jalolova@2026';
-const DEFAULT_CHEATER_CODE = '2026Al1209.9';
 
 export interface StoredStudent {
   id: string;
@@ -31,6 +36,7 @@ export interface StoredStudent {
   secretToken: string;
   studiedUnits?: number[];
   attempts: TestAttempt[];
+  cheatLogs?: UnitCheatSummary[];
   createdAt: string;
 }
 
@@ -79,6 +85,12 @@ function toStudentProfile(student: StoredStudent): StudentProfile {
   }
   const studiedUnits = Array.from(studiedSet).sort((a, b) => a - b);
 
+  const cheatLogs: UnitCheatSummary[] = Array.isArray(student.cheatLogs)
+    ? [...student.cheatLogs].sort(
+        (a, b) => new Date(b.lastEventAt).getTime() - new Date(a.lastEventAt).getTime(),
+      )
+    : [];
+
   return {
     id: student.id,
     fullName: student.fullName,
@@ -88,6 +100,8 @@ function toStudentProfile(student: StoredStudent): StudentProfile {
     studiedUnits,
     averagePercentage: agg.averagePercentage,
     attempts: sortedAttempts,
+    cheatLogs,
+    cheatOverview: summarizeStudentCheatLogs(cheatLogs),
     createdAt: student.createdAt,
   };
 }
@@ -128,10 +142,6 @@ export class AppStore {
           const validatedTimer = validateTestDurationMinutes(parsed.testDurationMinutes);
           return {
             teacherPasswordHash: parsed.teacherPasswordHash,
-            cheaterCodeHash:
-              typeof parsed.cheaterCodeHash === 'string' && parsed.cheaterCodeHash.includes(':')
-                ? parsed.cheaterCodeHash
-                : hashPassword(DEFAULT_CHEATER_CODE),
             testDurationMinutes: validatedTimer.ok
               ? validatedTimer.minutes
               : DEFAULT_TEST_DURATION_MINUTES,
@@ -148,7 +158,6 @@ export class AppStore {
 
     const initial: PersistedDatabase = {
       teacherPasswordHash: hashPassword(DEFAULT_TEACHER_PASSWORD),
-      cheaterCodeHash: hashPassword(DEFAULT_CHEATER_CODE),
       testDurationMinutes: DEFAULT_TEST_DURATION_MINUTES,
       teacherTokens: [],
       students: [],
@@ -249,6 +258,7 @@ export class AppStore {
       secretToken: crypto.randomBytes(24).toString('hex'),
       studiedUnits: [],
       attempts: [],
+      cheatLogs: [],
       createdAt: new Date().toISOString(),
     };
 
@@ -400,6 +410,33 @@ export class AppStore {
     };
   }
 
+  recordCheatEvent(
+    token: string | undefined,
+    payload: RecordCheatEventPayload,
+  ): { ok: true; profile: StudentProfile } | { ok: false; error: string } {
+    if (!token) {
+      return { ok: false, error: 'Sessiya topilmadi. Qaytadan kiring.' };
+    }
+    const found = this.db.students.find((s) => safeTokenMatch(token, s.secretToken));
+    if (!found) {
+      return { ok: false, error: "Akkaunt topilmadi yoki ruxsat yo'q." };
+    }
+    if (
+      !Number.isInteger(payload.unitNumber) ||
+      payload.unitNumber < 1 ||
+      payload.unitNumber > TOTAL_UNITS
+    ) {
+      return { ok: false, error: "Unit raqami noto'g'ri." };
+    }
+
+    found.cheatLogs = applyCheatEventToLogs(found.cheatLogs, payload);
+    this.persist();
+    return {
+      ok: true,
+      profile: toStudentProfile(found),
+    };
+  }
+
   loginTeacher(password: string): { ok: true; token: string } | { ok: false; error: string } {
     if (!password || !verifyPassword(password, this.db.teacherPasswordHash)) {
       return { ok: false, error: "Parol noto'g'ri." };
@@ -451,60 +488,6 @@ export class AppStore {
     return { ok: true };
   }
 
-  private getCheaterCodeHash(): string {
-    if (!this.db.cheaterCodeHash || !this.db.cheaterCodeHash.includes(':')) {
-      this.db.cheaterCodeHash = hashPassword(DEFAULT_CHEATER_CODE);
-      this.persist();
-    }
-    return this.db.cheaterCodeHash;
-  }
-
-  verifyCheaterCode(code: string): boolean {
-    const trimmed = code.trim();
-    if (!trimmed) return false;
-    return verifyPassword(trimmed, this.getCheaterCodeHash());
-  }
-
-  changeCheaterCode(
-    token: string | undefined,
-    oldCode: string,
-    newCode: string,
-    confirmCode: string,
-  ): { ok: true } | { ok: false; error: string } {
-    if (!this.isValidTeacherToken(token)) {
-      return { ok: false, error: "O'qituvchi sessiyasi yaroqsiz. Qaytadan kiring." };
-    }
-    const oldTrimmed = oldCode.trim();
-    const newTrimmed = newCode.trim();
-    const confirmTrimmed = confirmCode.trim();
-
-    if (!oldTrimmed || !verifyPassword(oldTrimmed, this.getCheaterCodeHash())) {
-      return { ok: false, error: "Eski cheater paroli noto'g'ri kiritildi." };
-    }
-    if (newTrimmed.length < 4) {
-      return {
-        ok: false,
-        error: "Yangi cheater paroli kamida 4 ta belgidan iborat bo'lishi kerak.",
-      };
-    }
-    if (newTrimmed !== confirmTrimmed) {
-      return {
-        ok: false,
-        error: 'Yangi cheater paroli va tasdiqlash paroli bir-biriga mos kelmadi.',
-      };
-    }
-    if (newTrimmed === oldTrimmed) {
-      return {
-        ok: false,
-        error: 'Yangi cheater paroli eski paroldan farq qilishi kerak.',
-      };
-    }
-
-    this.db.cheaterCodeHash = hashPassword(newTrimmed);
-    this.persist();
-    return { ok: true };
-  }
-
   getTestDurationMinutes(): number {
     const validated = validateTestDurationMinutes(this.db.testDurationMinutes);
     return validated.ok ? validated.minutes : DEFAULT_TEST_DURATION_MINUTES;
@@ -552,5 +535,21 @@ export class AppStore {
     this.db.students.splice(idx, 1);
     this.persist();
     return { ok: true };
+  }
+
+  clearStudentCheatLogs(
+    token: string | undefined,
+    studentId: string,
+  ): { ok: true; student: StudentSummaryForTeacher } | { ok: false; error: string } {
+    if (!this.isValidTeacherToken(token)) {
+      return { ok: false, error: "Ruxsat yo'q." };
+    }
+    const student = this.db.students.find((s) => s.id === studentId);
+    if (!student) {
+      return { ok: false, error: "O'quvchi topilmadi." };
+    }
+    student.cheatLogs = [];
+    this.persist();
+    return { ok: true, student: toTeacherSummary(student) };
   }
 }

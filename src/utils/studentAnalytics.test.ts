@@ -115,6 +115,17 @@ test('analyzeClassAndMistakes aggregates class averages and hardest questions', 
     explanation: 'Drought means no rain.',
   };
 
+  const emptyCheat = {
+    cheatLogs: [],
+    cheatOverview: {
+      totalExits: 0,
+      totalTabSwitches: 0,
+      totalAwaySeconds: 0,
+      flaggedUnitsCount: 0,
+      aiSuspected: false,
+    },
+  };
+
   const students: StudentProfile[] = [
     {
       id: 's1',
@@ -125,6 +136,7 @@ test('analyzeClassAndMistakes aggregates class averages and hardest questions', 
       studiedUnits: [],
       averagePercentage: 80,
       attempts: [makeAttempt('a1', 6, 80, '2026-11-14T10:00:00.000Z', [sharedMistake])],
+      ...emptyCheat,
       createdAt: '2026-11-14T09:00:00.000Z',
     },
     {
@@ -136,6 +148,7 @@ test('analyzeClassAndMistakes aggregates class averages and hardest questions', 
       studiedUnits: [],
       averagePercentage: 60,
       attempts: [makeAttempt('a2', 6, 60, '2026-11-14T11:00:00.000Z', [sharedMistake])],
+      ...emptyCheat,
       createdAt: '2026-11-14T09:00:00.000Z',
     },
   ];

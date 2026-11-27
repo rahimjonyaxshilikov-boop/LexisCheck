@@ -1,0 +1,17 @@
+{
+  "name": "LexisCheck — Upper-Intermediate Vocabulary Tests",
+  "short_name": "LexisCheck",
+  "description": "English Vocabulary in Use Upper-Intermediate (1–101-unitlar) bo'yicha o'quvchilar lug'at bilimini tekshiruvchi va baholovchi interaktiv test platformasi.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d121d",
+  "theme_color": "#4f46e5",
+  "lang": "uz",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

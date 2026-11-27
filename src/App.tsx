@@ -13,10 +13,9 @@ import {
   type GradeQuizResult,
 } from './utils/quizEngine';
 import {
+  clearLegacyCheaterLockStorage,
   exitAppFullscreen,
-  isCheaterLockedInStorage,
   requestAppFullscreen,
-  setCheaterLockedInStorage,
 } from './utils/antiCheat';
 import { Header } from './components/Header';
 import { LoginScreen } from './components/LoginScreen';
@@ -25,7 +24,7 @@ import { TestRunner } from './components/TestRunner';
 import { ResultsView } from './components/ResultsView';
 import { StudentProfile } from './components/StudentProfile';
 import { TeacherPanel } from './components/TeacherPanel';
-import { CheaterLockScreen } from './components/CheaterLockScreen';
+import { syncPageSeo } from './utils/seo';
 
 const DARK_MODE_KEY = 'lexischeck_dark_mode';
 
@@ -50,9 +49,11 @@ export default function App() {
     DEFAULT_TEST_DURATION_MINUTES,
   );
   const [welcomeBackNotice, setWelcomeBackNotice] = useState(false);
-  const [cheaterLocked, setCheaterLocked] = useState<boolean>(() =>
-    isCheaterLockedInStorage(),
-  );
+
+  // Clear any legacy cheater hard-lock entries from earlier app versions
+  useEffect(() => {
+    clearLegacyCheaterLockStorage();
+  }, []);
 
   // Sync `.dark` class on <html>
   useEffect(() => {
@@ -65,6 +66,16 @@ export default function App() {
       // Ignore storage error
     }
   }, [darkMode]);
+
+  // Sync canonical URL, OG URL/image, and dynamic document title for SEO
+  useEffect(() => {
+    const unitLabel = activeUnit
+      ? `Unit ${activeUnit.unitNumber}: ${activeUnit.title}`
+      : activeAttempt
+        ? `Unit ${activeAttempt.unitNumber}: ${activeAttempt.unitTitle}`
+        : undefined;
+    syncPageSeo(view, unitLabel);
+  }, [view, activeUnit, activeAttempt]);
 
   // Restore active student session & timer setting on reload
   useEffect(() => {
@@ -114,23 +125,9 @@ export default function App() {
   }
 
   function handleStartUnit(unit: UnitData) {
-    if (cheaterLocked || isCheaterLockedInStorage()) return;
     void requestAppFullscreen();
     setActiveUnit(unit);
     setView('testing');
-  }
-
-  function handleTriggerCheaterLock() {
-    setCheaterLockedInStorage(true);
-    setCheaterLocked(true);
-  }
-
-  function handleUnlockCheater() {
-    setCheaterLockedInStorage(false);
-    setCheaterLocked(false);
-    setActiveUnit(null);
-    void exitAppFullscreen();
-    setView(student ? 'units' : 'login');
   }
 
   async function handleFinishTest(result: GradeQuizResult, elapsedSeconds: number) {
@@ -174,14 +171,11 @@ export default function App() {
     );
   }
 
-  if (cheaterLocked) {
-    return <CheaterLockScreen onUnlock={handleUnlockCheater} />;
-  }
-
   // Distraction-free test mode replaces standard Header with slim TestRunner bar
   if (view === 'testing' && activeUnit && student) {
     return (
       <TestRunner
+        studentName={student.fullName}
         unit={activeUnit}
         testDurationMinutes={testDurationMinutes}
         darkMode={darkMode}
@@ -192,7 +186,7 @@ export default function App() {
           setActiveUnit(null);
           setView('units');
         }}
-        onTriggerCheaterLock={handleTriggerCheaterLock}
+        onCheatRecorded={(updatedProfile) => setStudent(updatedProfile)}
       />
     );
   }

@@ -16,6 +16,14 @@ const mockStudent: StudentProfile = {
   studiedUnits: [6],
   averagePercentage: 80,
   attempts: [],
+  cheatLogs: [],
+  cheatOverview: {
+    totalExits: 0,
+    totalTabSwitches: 0,
+    totalAwaySeconds: 0,
+    flaggedUnitsCount: 0,
+    aiSuspected: false,
+  },
   createdAt: '2026-11-14T10:00:00.000Z',
 };
 

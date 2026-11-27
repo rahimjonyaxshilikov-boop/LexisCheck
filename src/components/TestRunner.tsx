@@ -11,7 +11,7 @@ import {
   Sun,
   X,
 } from 'lucide-react';
-import type { ShuffledQuestion, UnitData } from '../types/quiz';
+import type { ShuffledQuestion, StudentProfile, UnitData } from '../types/quiz';
 import {
   DEFAULT_TEST_DURATION_MINUTES,
   formatCountdown,
@@ -19,32 +19,36 @@ import {
   prepareShuffledQuiz,
   type GradeQuizResult,
 } from '../utils/quizEngine';
-
+import { recordCheatEvent } from '../utils/api';
 import {
   isFullscreenActive,
   requestAppFullscreen,
+  shouldFlagAiUsage,
 } from '../utils/antiCheat';
+import { FullscreenCheaterMenu } from './FullscreenCheaterMenu';
 
 interface TestRunnerProps {
+  studentName: string;
   unit: UnitData;
   testDurationMinutes?: number;
   darkMode: boolean;
   onToggleDarkMode: () => void;
   onFinishTest: (result: GradeQuizResult, elapsedSeconds: number) => Promise<void>;
   onCancelTest: () => void;
-  onTriggerCheaterLock: () => void;
+  onCheatRecorded?: (updatedProfile: StudentProfile) => void;
 }
 
 const OPTION_LETTERS = ['A', 'B', 'C', 'D'] as const;
 
 export function TestRunner({
+  studentName,
   unit,
   testDurationMinutes = DEFAULT_TEST_DURATION_MINUTES,
   darkMode,
   onToggleDarkMode,
   onFinishTest,
   onCancelTest,
-  onTriggerCheaterLock,
+  onCheatRecorded,
 }: TestRunnerProps) {
   const totalDurationSeconds = Math.max(60, Math.round(testDurationMinutes * 60));
   // Shuffle questions & options once when the test mounts
@@ -63,9 +67,18 @@ export function TestRunner({
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  const [cheaterMenuOpen, setCheaterMenuOpen] = useState(false);
+  const [sessionExitCount, setSessionExitCount] = useState(0);
+  const [sessionTabSwitchCount, setSessionTabSwitchCount] = useState(0);
+  const [sessionAiSuspected, setSessionAiSuspected] = useState(false);
+  const [fullscreenNow, setFullscreenNow] = useState(() => isFullscreenActive());
+
   const submittedRef = useRef(false);
   const exitingLegitRef = useRef(false);
   const fullscreenEnteredRef = useRef(isFullscreenActive());
+  const cheaterMenuOpenRef = useRef(false);
+  const awayStartedAtRef = useRef<number | null>(null);
+  const sessionStatsRef = useRef({ exits: 0, tabs: 0, totalAwaySeconds: 0 });
   const answersRef = useRef(answers);
   answersRef.current = answers;
   const secondsLeftRef = useRef(secondsLeft);
@@ -104,33 +117,142 @@ export function TestRunner({
     }
   }, [shuffledQuestions, onFinishTest, totalDurationSeconds]);
 
-  // Enforce fullscreen anti-cheat lock: exiting fullscreen locks test immediately
+  const flushAwayDuration = useCallback(() => {
+    if (awayStartedAtRef.current === null) return;
+    const elapsedAway = Math.max(
+      1,
+      Math.round((Date.now() - awayStartedAtRef.current) / 1000),
+    );
+    awayStartedAtRef.current = null;
+    sessionStatsRef.current.totalAwaySeconds += elapsedAway;
+    const aiNow = shouldFlagAiUsage({
+      exitCount: sessionStatsRef.current.exits,
+      tabSwitchCount: sessionStatsRef.current.tabs,
+      totalAwaySeconds: sessionStatsRef.current.totalAwaySeconds,
+    });
+    if (aiNow) setSessionAiSuspected(true);
+    void recordCheatEvent({
+      unitNumber: unit.unitNumber,
+      unitTitle: unit.title,
+      eventType: 'away_return',
+      awaySeconds: elapsedAway,
+    }).then((profile) => {
+      if (!profile) return;
+      onCheatRecorded?.(profile);
+      const unitEntry = profile.cheatLogs.find(
+        (item) => item.unitNumber === unit.unitNumber,
+      );
+      if (unitEntry?.aiSuspected) setSessionAiSuspected(true);
+    });
+  }, [unit.unitNumber, unit.title, onCheatRecorded]);
+
+  const triggerCheaterOverlay = useCallback(
+    (eventType: 'fullscreen_exit' | 'tab_switch') => {
+      if (submittedRef.current || exitingLegitRef.current) return;
+
+      if (awayStartedAtRef.current === null) {
+        awayStartedAtRef.current = Date.now();
+      }
+      if (eventType === 'fullscreen_exit') {
+        sessionStatsRef.current.exits += 1;
+        setSessionExitCount(sessionStatsRef.current.exits);
+      } else {
+        sessionStatsRef.current.tabs += 1;
+        setSessionTabSwitchCount(sessionStatsRef.current.tabs);
+      }
+
+      const aiNow = shouldFlagAiUsage({
+        exitCount: sessionStatsRef.current.exits,
+        tabSwitchCount: sessionStatsRef.current.tabs,
+        totalAwaySeconds: sessionStatsRef.current.totalAwaySeconds,
+      });
+      if (aiNow) setSessionAiSuspected(true);
+
+      setShowNavDrawer(false);
+      setConfirmSubmit(false);
+      setConfirmExit(false);
+      cheaterMenuOpenRef.current = true;
+      setCheaterMenuOpen(true);
+
+      void recordCheatEvent({
+        unitNumber: unit.unitNumber,
+        unitTitle: unit.title,
+        eventType,
+      }).then((profile) => {
+        if (!profile) return;
+        onCheatRecorded?.(profile);
+        const unitEntry = profile.cheatLogs.find(
+          (item) => item.unitNumber === unit.unitNumber,
+        );
+        if (unitEntry?.aiSuspected) setSessionAiSuspected(true);
+      });
+    },
+    [unit.unitNumber, unit.title, onCheatRecorded],
+  );
+
+  // Enforce fullscreen anti-cheat screen-hide: exiting fullscreen or switching tabs shows Yangi Cheater Menu & logs event
   useEffect(() => {
     if (isFullscreenActive()) {
       fullscreenEnteredRef.current = true;
+      setFullscreenNow(true);
     }
 
     function handleFullscreenChange() {
-      if (isFullscreenActive()) {
+      const active = isFullscreenActive();
+      setFullscreenNow(active);
+
+      if (active) {
         fullscreenEnteredRef.current = true;
+        if (cheaterMenuOpenRef.current && document.visibilityState === 'visible') {
+          flushAwayDuration();
+          cheaterMenuOpenRef.current = false;
+          setCheaterMenuOpen(false);
+        }
         return;
       }
+
       if (
         fullscreenEnteredRef.current &&
         !submittedRef.current &&
         !exitingLegitRef.current
       ) {
-        onTriggerCheaterLock();
+        triggerCheaterOverlay('fullscreen_exit');
+      }
+    }
+
+    function handleVisibilityChange() {
+      if (submittedRef.current || exitingLegitRef.current) return;
+      if (document.visibilityState === 'hidden') {
+        triggerCheaterOverlay('tab_switch');
       }
     }
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
       document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [onTriggerCheaterLock]);
+  }, [flushAwayDuration, triggerCheaterOverlay]);
+
+  async function handleReturnFullscreenFromOverlay() {
+    const entered = await requestAppFullscreen();
+    const active = entered || isFullscreenActive();
+    setFullscreenNow(active);
+    if (active) {
+      fullscreenEnteredRef.current = true;
+      flushAwayDuration();
+      cheaterMenuOpenRef.current = false;
+      setCheaterMenuOpen(false);
+    } else if (typeof document !== 'undefined' && !document.documentElement.requestFullscreen) {
+      // Fallback only if Fullscreen API is completely unsupported on device
+      flushAwayDuration();
+      cheaterMenuOpenRef.current = false;
+      setCheaterMenuOpen(false);
+    }
+  }
 
   // Configurable countdown timer (15 minutes default)
   useEffect(() => {
@@ -150,7 +272,7 @@ export function TestRunner({
   // Keyboard shortcuts for desktop comfort (1-4 / A-D to pick, F to flag, arrows to navigate)
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (confirmExit || confirmSubmit || showNavDrawer) return;
+      if (cheaterMenuOpen || confirmExit || confirmSubmit || showNavDrawer) return;
       const target = e.target as HTMLElement | null;
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
 
@@ -246,8 +368,13 @@ export function TestRunner({
         </div>
       </header>
 
-      {/* Spacious Question & Options Stage */}
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-between px-4 py-6 sm:px-6 sm:py-10">
+      {/* Spacious Question & Options Stage (hidden via screen-hide when Cheater menu is active) */}
+      <main
+        aria-hidden={cheaterMenuOpen}
+        className={`mx-auto flex w-full max-w-3xl flex-1 flex-col justify-between px-4 py-6 transition-opacity duration-150 sm:px-6 sm:py-10 ${
+          cheaterMenuOpen ? 'invisible pointer-events-none select-none opacity-0' : ''
+        }`}
+      >
         <div className="my-auto">
           <div className="gloss-panel rounded-2xl p-5 sm:p-8">
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
@@ -554,6 +681,25 @@ export function TestRunner({
             </div>
           </div>
         </div>
+      )}
+      {/* Yangi Cheater Menu (Screen Hide & Fullscreen Return Prompt) */}
+      {cheaterMenuOpen && (
+        <FullscreenCheaterMenu
+          studentName={studentName}
+          unitNumber={unit.unitNumber}
+          unitTitle={unit.title}
+          exitCount={sessionExitCount}
+          tabSwitchCount={sessionTabSwitchCount}
+          aiSuspected={sessionAiSuspected}
+          secondsLeft={secondsLeft}
+          fullscreenActive={fullscreenNow}
+          onReturnFullscreen={() => void handleReturnFullscreenFromOverlay()}
+          onRequestAbortTest={() => {
+            flushAwayDuration();
+            exitingLegitRef.current = true;
+            onCancelTest();
+          }}
+        />
       )}
     </div>
   );

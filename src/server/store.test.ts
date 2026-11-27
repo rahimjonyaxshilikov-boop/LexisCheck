@@ -157,38 +157,52 @@ test('teacher authenticates with Jalolova@2026 and can update password with veri
   }
 });
 
-test('teacher can verify and update cheater unlock code independently', () => {
+test('store records per-unit fullscreen exits and AI suspicion and exposes them on teacher dashboard', () => {
   const { store, cleanup } = createTempStore();
   try {
-    assert.equal(store.verifyCheaterCode('2026Al1209.9'), true);
-    assert.equal(store.verifyCheaterCode('wrong-code'), false);
+    const created = store.enterStudent('Sardorbek Olimov', '9-01');
+    assert.equal(created.ok, true);
+    if (!created.ok) return;
+
+    const first = store.recordCheatEvent(created.token, {
+      unitNumber: 4,
+      unitTitle: 'Suffixes',
+      eventType: 'fullscreen_exit',
+    });
+    assert.equal(first.ok, true);
+    if (!first.ok) return;
+    assert.equal(first.profile.cheatOverview.totalExits, 1);
+    assert.equal(first.profile.cheatOverview.aiSuspected, false);
+
+    const second = store.recordCheatEvent(created.token, {
+      unitNumber: 4,
+      unitTitle: 'Suffixes',
+      eventType: 'tab_switch',
+      awaySeconds: 12,
+    });
+    assert.equal(second.ok, true);
+    if (!second.ok) return;
+    assert.equal(second.profile.cheatOverview.totalExits, 1);
+    assert.equal(second.profile.cheatOverview.totalTabSwitches, 1);
+    assert.equal(second.profile.cheatOverview.aiSuspected, true);
 
     const login = store.loginTeacher('Jalolova@2026');
     assert.equal(login.ok, true);
     if (!login.ok) return;
 
-    // Unauthenticated token fails
-    const unauth = store.changeCheaterCode('bad-token', '2026Al1209.9', 'NewCheat99', 'NewCheat99');
-    assert.equal(unauth.ok, false);
+    const dashboard = store.getTeacherDashboard(login.token);
+    assert.equal(dashboard.ok, true);
+    if (!dashboard.ok) return;
+    assert.equal(dashboard.students[0].cheatLogs.length, 1);
+    assert.equal(dashboard.students[0].cheatLogs[0].unitNumber, 4);
+    assert.equal(dashboard.students[0].cheatLogs[0].aiSuspected, true);
 
-    // Wrong old code fails
-    const wrongOld = store.changeCheaterCode(login.token, 'WrongOld', 'NewCheat99', 'NewCheat99');
-    assert.equal(wrongOld.ok, false);
-
-    // Mismatched confirm fails
-    const mismatch = store.changeCheaterCode(login.token, '2026Al1209.9', 'NewCheat99', 'Other99');
-    assert.equal(mismatch.ok, false);
-
-    // Valid update works and invalidates previous code
-    const updated = store.changeCheaterCode(
-      login.token,
-      '2026Al1209.9',
-      'NewCheat99',
-      'NewCheat99',
-    );
-    assert.equal(updated.ok, true);
-    assert.equal(store.verifyCheaterCode('2026Al1209.9'), false);
-    assert.equal(store.verifyCheaterCode('NewCheat99'), true);
+    const cleared = store.clearStudentCheatLogs(login.token, created.profile.id);
+    assert.equal(cleared.ok, true);
+    if (cleared.ok) {
+      assert.equal(cleared.student.cheatLogs.length, 0);
+      assert.equal(cleared.student.cheatOverview.totalExits, 0);
+    }
   } finally {
     cleanup();
   }

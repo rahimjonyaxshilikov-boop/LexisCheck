@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  localClearStudentCheatLogs,
   localDeleteStudent,
   localEnterStudent,
   localFetchTeacherDashboard,
@@ -8,12 +9,11 @@ import {
   localGetTestDurationMinutes,
   localLoginTeacher,
   localLookupStudent,
+  localRecordCheatEvent,
   LocalStudentEntryError,
   localSubmitAttempt,
-  localUpdateCheaterCode,
   localUpdateTeacherPassword,
   localUpdateTestDurationMinutes,
-  localVerifyCheaterCode,
   type StorageLike,
 } from './localFallbackStore';
 
@@ -79,17 +79,23 @@ test('localFallbackStore supports student entry, returning resume, attempt save,
   const newToken = await localLoginTeacher('NewPass@2026', storage);
   assert.ok(newToken.length > 10);
 
-  assert.equal(await localVerifyCheaterCode('2026Al1209.9', storage), true);
-  assert.equal(await localVerifyCheaterCode('wrong', storage), false);
-  await localUpdateCheaterCode(
-    newToken,
-    '2026Al1209.9',
-    'LocalCheat2027',
-    'LocalCheat2027',
+  const afterExit = localRecordCheatEvent(
+    entered.token,
+    { unitNumber: 2, unitTitle: 'Word formation', eventType: 'fullscreen_exit' },
     storage,
   );
-  assert.equal(await localVerifyCheaterCode('2026Al1209.9', storage), false);
-  assert.equal(await localVerifyCheaterCode('LocalCheat2027', storage), true);
+  assert.equal(afterExit.cheatOverview.totalExits, 1);
+  assert.equal(afterExit.cheatOverview.aiSuspected, false);
+
+  const afterTab = localRecordCheatEvent(
+    entered.token,
+    { unitNumber: 2, unitTitle: 'Word formation', eventType: 'tab_switch', awaySeconds: 9 },
+    storage,
+  );
+  assert.equal(afterTab.cheatOverview.aiSuspected, true);
+
+  const cleared = localClearStudentCheatLogs(newToken, entered.profile.id, storage);
+  assert.equal(cleared.cheatLogs.length, 0);
 
   assert.equal(localGetTestDurationMinutes(storage), 15);
   assert.throws(() => localUpdateTestDurationMinutes('bad-token', 20, storage));

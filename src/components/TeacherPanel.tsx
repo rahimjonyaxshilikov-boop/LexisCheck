@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import {
+  AlertTriangle,
+  Bot,
   CheckCircle2,
   Clock,
   Download,
@@ -7,6 +9,7 @@ import {
   KeyRound,
   Lock,
   LogOut,
+  RotateCcw,
   Search,
   ShieldAlert,
   Trash2,
@@ -14,12 +17,12 @@ import {
 } from 'lucide-react';
 import type { StudentSummaryForTeacher, TestAttempt } from '../types/quiz';
 import {
+  clearStudentCheatLogsByTeacher,
   deleteStudentByTeacher,
   fetchTeacherDashboard,
   getSavedTeacherToken,
   loginTeacherAccount,
   setSavedTeacherToken,
-  updateCheaterCode,
   updateTeacherPassword,
   updateTestDurationMinutes,
 } from '../utils/api';
@@ -67,21 +70,17 @@ export function TeacherPanel({
   const [search, setSearch] = useState('');
   const [classFilter, setClassFilter] = useState<string>('all');
   const [unitFilter, setUnitFilter] = useState<string>('all');
-  const [teacherTab, setTeacherTab] = useState<'students' | 'insights'>('students');
+  const [teacherTab, setTeacherTab] = useState<'students' | 'cheater' | 'insights'>('students');
 
   const [selectedStudent, setSelectedStudent] =
     useState<StudentSummaryForTeacher | null>(null);
   const [selectedAttempt, setSelectedAttempt] = useState<TestAttempt | null>(null);
 
-  // Change Password / Cheater Code modal state
+  // Change Password modal state
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [passwordTab, setPasswordTab] = useState<'teacher' | 'cheater'>('teacher');
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [oldCheaterCode, setOldCheaterCode] = useState('');
-  const [newCheaterCode, setNewCheaterCode] = useState('');
-  const [confirmCheaterCode, setConfirmCheaterCode] = useState('');
   const [pwError, setPwError] = useState<string | null>(null);
   const [pwSuccess, setPwSuccess] = useState<string | null>(null);
   const [pwSubmitting, setPwSubmitting] = useState(false);
@@ -164,26 +163,7 @@ export function TeacherPanel({
     }
   }
 
-  async function handleChangeCheaterCode(e: FormEvent) {
-    e.preventDefault();
-    setPwError(null);
-    setPwSuccess(null);
-    setPwSubmitting(true);
-    try {
-      await updateCheaterCode(oldCheaterCode, newCheaterCode, confirmCheaterCode);
-      setPwSuccess('Cheater paroli muvaffaqiyatli yangilandi.');
-      setOldCheaterCode('');
-      setNewCheaterCode('');
-      setConfirmCheaterCode('');
-    } catch (err) {
-      setPwError(err instanceof Error ? err.message : "Cheater parolini yangilab bo'lmadi.");
-    } finally {
-      setPwSubmitting(false);
-    }
-  }
-
-  function openSecurityModal(tab: 'teacher' | 'cheater') {
-    setPasswordTab(tab);
+  function openSecurityModal() {
     setPwError(null);
     setPwSuccess(null);
     setShowPasswordModal(true);
@@ -237,6 +217,22 @@ export function TeacherPanel({
     }
   }
 
+  async function handleClearStudentCheatLogs(studentId: string) {
+    try {
+      const updated = await clearStudentCheatLogsByTeacher(studentId);
+      if (updated) {
+        setStudents((prev) => prev.map((s) => (s.id === studentId ? updated : s)));
+        if (selectedStudent?.id === studentId) {
+          setSelectedStudent(updated);
+        }
+      }
+    } catch (err) {
+      setDataError(
+        err instanceof Error ? err.message : "Nazorat yozuvlarini tozalab bo'lmadi.",
+      );
+    }
+  }
+
   const filteredStudents = useMemo(() => {
     const normalizedQuery = normalizeComparableText(search);
     const queryTokens = normalizedQuery ? normalizedQuery.split(' ').filter(Boolean) : [];
@@ -244,13 +240,56 @@ export function TeacherPanel({
       if (classFilter !== 'all' && s.className !== classFilter) return false;
       if (unitFilter !== 'all') {
         const unitNum = Number(unitFilter);
-        if (!s.completedUnits.includes(unitNum)) return false;
+        const hasUnitAttempt = s.attempts.some((a) => a.unitNumber === unitNum) || s.completedUnits.includes(unitNum);
+        const hasUnitCheat = (s.cheatLogs ?? []).some((c) => c.unitNumber === unitNum);
+        if (!hasUnitAttempt && !hasUnitCheat) return false;
       }
       if (queryTokens.length === 0) return true;
       const comparableStudentText = `${normalizeComparableText(s.fullName)} ${normalizeComparableText(s.className)}`;
       return queryTokens.every((token) => comparableStudentText.includes(token));
     });
   }, [students, search, classFilter, unitFilter]);
+
+  const cheaterRecords = useMemo(() => {
+    const targetUnit = unitFilter === 'all' ? null : Number(unitFilter);
+    const list: Array<{
+      student: StudentSummaryForTeacher;
+      log: NonNullable<StudentSummaryForTeacher['cheatLogs']>[number];
+    }> = [];
+    for (const student of filteredStudents) {
+      for (const log of student.cheatLogs ?? []) {
+        if (targetUnit !== null && log.unitNumber !== targetUnit) continue;
+        list.push({ student, log });
+      }
+    }
+    return list.sort(
+      (a, b) => new Date(b.log.lastEventAt).getTime() - new Date(a.log.lastEventAt).getTime(),
+    );
+  }, [filteredStudents, unitFilter]);
+
+  const cheaterStudentsCount = useMemo(
+    () =>
+      filteredStudents.filter(
+        (s) =>
+          (s.cheatOverview?.totalExits ?? 0) + (s.cheatOverview?.totalTabSwitches ?? 0) > 0,
+      ).length,
+    [filteredStudents],
+  );
+
+  const totalCheatExits = useMemo(
+    () =>
+      filteredStudents.reduce(
+        (sum, s) =>
+          sum + (s.cheatOverview?.totalExits ?? 0) + (s.cheatOverview?.totalTabSwitches ?? 0),
+        0,
+      ),
+    [filteredStudents],
+  );
+
+  const aiSuspectedStudentsCount = useMemo(
+    () => filteredStudents.filter((s) => s.cheatOverview?.aiSuspected).length,
+    [filteredStudents],
+  );
 
   const totalAttempts = useMemo(
     () => filteredStudents.reduce((sum, s) => sum + s.attempts.length, 0),
@@ -281,15 +320,30 @@ export function TeacherPanel({
 
   function exportCsv() {
     const rows = [
-      ['Ism Familiya', 'Sinf', 'Umumiy ball', 'Bajarilgan unitlar', 'Ortacha (%)', 'Urinishlar soni'],
-      ...filteredStudents.map((s) => [
-        `"${s.fullName.replace(/"/g, '""')}"`,
-        s.className,
-        String(s.totalPoints),
-        `${s.completedUnits.length}/${ALL_UNITS.length}`,
-        String(s.averagePercentage),
-        String(s.attempts.length),
-      ]),
+      [
+        'Ism Familiya',
+        'Sinf',
+        'Umumiy ball',
+        'Bajarilgan unitlar',
+        'Ortacha (%)',
+        'Urinishlar soni',
+        'Chiqishlar soni',
+        'AI shubhasi',
+      ],
+      ...filteredStudents.map((s) => {
+        const exits =
+          (s.cheatOverview?.totalExits ?? 0) + (s.cheatOverview?.totalTabSwitches ?? 0);
+        return [
+          `"${s.fullName.replace(/"/g, '""')}"`,
+          s.className,
+          String(s.totalPoints),
+          `${s.completedUnits.length}/${ALL_UNITS.length}`,
+          String(s.averagePercentage),
+          String(s.attempts.length),
+          String(exits),
+          s.cheatOverview?.aiSuspected ? 'Ha' : "Yo'q",
+        ];
+      }),
     ];
     const csvContent = rows.map((r) => r.join(',')).join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -394,20 +448,11 @@ export function TeacherPanel({
 
           <button
             type="button"
-            onClick={() => openSecurityModal('teacher')}
+            onClick={openSecurityModal}
             className="gloss-btn-secondary inline-flex min-h-[40px] items-center gap-1.5 rounded-xl px-3.5 text-xs font-semibold text-slate-700 dark:text-slate-200"
           >
             <KeyRound className="h-3.5 w-3.5" />
             <span>Parolni yangilash</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => openSecurityModal('cheater')}
-            className="gloss-btn-secondary inline-flex min-h-[40px] items-center gap-1.5 rounded-xl px-3.5 text-xs font-semibold text-slate-700 dark:text-slate-200"
-          >
-            <ShieldAlert className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
-            <span>Cheater paroli</span>
           </button>
 
           <button
@@ -432,7 +477,7 @@ export function TeacherPanel({
       </div>
 
       {/* KPI Row */}
-      <section className="mt-6 grid grid-cols-3 gap-4">
+      <section className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <div className="gloss-card rounded-2xl border-indigo-200/70 p-4 sm:p-5 dark:border-indigo-500/25">
           <div className="text-xs font-medium text-indigo-700 dark:text-indigo-300">Oʻquvchilar</div>
           <div className="font-mono-tabular mt-1 text-2xl font-bold text-slate-900 dark:text-slate-50">
@@ -451,6 +496,22 @@ export function TeacherPanel({
             {avgClassScore}%
           </div>
         </div>
+        <button
+          type="button"
+          onClick={() => setTeacherTab('cheater')}
+          className="gloss-card rounded-2xl border-rose-200/80 p-4 text-left transition-colors hover:border-rose-400/70 sm:p-5 dark:border-rose-500/30 dark:hover:border-rose-400/55"
+        >
+          <div className="flex items-center justify-between gap-1 text-xs font-medium text-rose-700 dark:text-rose-300">
+            <span>Cheater nazorati</span>
+            <ShieldAlert className="h-3.5 w-3.5 shrink-0" />
+          </div>
+          <div className="font-mono-tabular mt-1 text-2xl font-bold text-rose-600 dark:text-rose-400">
+            {cheaterStudentsCount}
+          </div>
+          <div className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+            {totalCheatExits} marta chiqish · {aiSuspectedStudentsCount} AI shubha
+          </div>
+        </button>
       </section>
 
       {/* Filters */}
@@ -505,10 +566,10 @@ export function TeacherPanel({
         </div>
       )}
 
-      {/* View Mode Switch: Students List vs Class & Hardest Questions */}
-      <div className="mt-5 flex items-center justify-between gap-3">
+      {/* View Mode Switch: Students List vs Cheater Nazorat vs Class Insights */}
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
         <div
-          className="inline-flex rounded-xl border border-slate-200 bg-slate-200/70 p-1 dark:border-slate-700/40 dark:bg-[#0e1422]"
+          className="inline-flex flex-wrap rounded-xl border border-slate-200 bg-slate-200/70 p-1 dark:border-slate-700/40 dark:bg-[#0e1422]"
           role="tablist"
           aria-label="O'qituvchi ko'rinishlari"
         >
@@ -528,6 +589,21 @@ export function TeacherPanel({
           <button
             type="button"
             role="tab"
+            data-testid="teacher-cheater-tab"
+            aria-selected={teacherTab === 'cheater'}
+            onClick={() => setTeacherTab('cheater')}
+            className={`inline-flex min-h-[36px] items-center gap-1.5 rounded-lg px-3.5 text-xs font-semibold whitespace-nowrap transition-colors ${
+              teacherTab === 'cheater'
+                ? 'bg-white text-rose-700 shadow-xs dark:bg-rose-500/20 dark:text-rose-200'
+                : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
+            }`}
+          >
+            <ShieldAlert className="h-3.5 w-3.5" />
+            <span>Cheater nazorati ({cheaterRecords.length})</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
             aria-selected={teacherTab === 'insights'}
             onClick={() => setTeacherTab('insights')}
             className={`min-h-[36px] rounded-lg px-3.5 text-xs font-semibold whitespace-nowrap transition-colors ${
@@ -541,12 +617,111 @@ export function TeacherPanel({
         </div>
       </div>
 
-      {/* Results Table / Class & Mistake Insights */}
+      {/* Results Table / Cheater Audit / Class & Mistake Insights */}
       <section className="mt-4">
         {loadingData ? (
           <div className="gloss-panel rounded-2xl p-10 text-center text-sm text-slate-500 dark:text-slate-400">
             Maʼlumotlar yuklanmoqda...
           </div>
+        ) : teacherTab === 'cheater' ? (
+          cheaterRecords.length === 0 ? (
+            <div className="gloss-panel rounded-2xl p-10 text-center">
+              <CheckCircle2 className="mx-auto h-9 w-9 text-emerald-500" />
+              <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-white">
+                Hozircha toʻliq ekrandan chiqish yoki AI shubhasi qayd etilmagan
+              </p>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                Oʻquvchi test paytida toʻliq ekrandan chiqsa yoki boshqa oynaga oʻtsa, shu yerda koʻrinadi.
+              </p>
+            </div>
+          ) : (
+            <div className="gloss-panel overflow-hidden rounded-2xl">
+              <div className="overflow-x-auto">
+                <table data-testid="teacher-cheater-table" className="w-full text-left text-sm">
+                  <thead className="border-b border-slate-200/80 bg-slate-50/90 text-xs font-semibold text-slate-600 dark:border-white/10 dark:bg-black/45 dark:text-slate-300">
+                    <tr>
+                      <th className="px-4 py-3.5">Oʻquvchi</th>
+                      <th className="px-4 py-3.5">Sinf</th>
+                      <th className="px-4 py-3.5">Unit testi</th>
+                      <th className="px-4 py-3.5">Chiqib ketgan</th>
+                      <th className="px-4 py-3.5">AI nazorati</th>
+                      <th className="px-4 py-3.5">Oxirgi vaqti</th>
+                      <th className="px-4 py-3.5 text-right">Amal</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200/70 dark:divide-white/10">
+                    {cheaterRecords.map(({ student, log }) => {
+                      const totalUnitExits = log.exitCount + log.tabSwitchCount;
+                      return (
+                        <tr
+                          key={`${student.id}-unit-${log.unitNumber}`}
+                          className="transition-colors hover:bg-slate-50/80 dark:hover:bg-white/[0.03]"
+                        >
+                          <td className="px-4 py-3.5 font-semibold text-slate-900 dark:text-white">
+                            {student.fullName}
+                          </td>
+                          <td className="px-4 py-3.5 font-mono-tabular text-slate-700 dark:text-slate-300">
+                            {student.className}
+                          </td>
+                          <td className="px-4 py-3.5 text-slate-800 dark:text-slate-200">
+                            <span className="font-mono-tabular font-semibold text-indigo-600 dark:text-indigo-300">
+                              Unit {log.unitNumber}
+                            </span>
+                            <span className="ml-1.5 text-xs text-slate-500 dark:text-slate-400">
+                              {log.unitTitle}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3.5 font-mono-tabular">
+                            <span className="font-bold text-rose-600 dark:text-rose-400">
+                              {totalUnitExits} marta
+                            </span>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                              Fullscreen: {log.exitCount} · Oyna: {log.tabSwitchCount}
+                              {log.totalAwaySeconds > 0 ? ` · ${log.totalAwaySeconds}s` : ''}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3.5">
+                            {log.aiSuspected ? (
+                              <span className="inline-flex items-center gap-1.5 rounded-lg border border-rose-300 bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700 dark:border-rose-500/40 dark:bg-rose-950/50 dark:text-rose-300">
+                                <Bot className="h-3.5 w-3.5" />
+                                <span>AI / Tashqi yordam shubhasi</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 dark:border-amber-500/35 dark:bg-amber-950/40 dark:text-amber-300">
+                                <AlertTriangle className="h-3.5 w-3.5" />
+                                <span>Fullscreendan chiqqan</span>
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3.5 font-mono-tabular text-xs text-slate-600 dark:text-slate-400">
+                            {new Date(log.lastEventAt).toLocaleString('uz-UZ', {
+                              month: '2-digit',
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </td>
+                          <td className="px-4 py-3.5 text-right">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedStudent(student);
+                                setSelectedAttempt(student.attempts[0] ?? null);
+                              }}
+                              className="gloss-btn-secondary inline-flex min-h-[34px] items-center gap-1 rounded-lg px-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                              <span>Profil</span>
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )
         ) : teacherTab === 'insights' ? (
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Class Breakdown */}
@@ -647,56 +822,79 @@ export function TeacherPanel({
                     <th className="px-4 py-3.5">Umumiy ball</th>
                     <th className="px-4 py-3.5">Unitlar</th>
                     <th className="px-4 py-3.5">Oʻrtacha</th>
+                    <th className="px-4 py-3.5">Nazorat / AI</th>
                     <th className="px-4 py-3.5 text-right">Amallar</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200/70 dark:divide-white/10">
-                  {filteredStudents.map((s) => (
-                    <tr
-                      key={s.id}
-                      className="transition-colors hover:bg-slate-50/80 dark:hover:bg-white/[0.03]"
-                    >
-                      <td className="px-4 py-3.5 font-semibold text-slate-900 dark:text-white">
-                        {s.fullName}
-                      </td>
-                      <td className="px-4 py-3.5 font-mono-tabular text-slate-700 dark:text-slate-300">
-                        {s.className}
-                      </td>
-                      <td className="px-4 py-3.5 font-mono-tabular font-bold text-sky-700 dark:text-sky-400">
-                        {s.totalPoints}
-                      </td>
-                      <td className="px-4 py-3.5 font-mono-tabular text-slate-700 dark:text-slate-300">
-                        {s.completedUnits.length}/{ALL_UNITS.length}
-                      </td>
-                      <td className="px-4 py-3.5 font-mono-tabular text-slate-700 dark:text-slate-300">
-                        {s.averagePercentage}%
-                      </td>
-                      <td className="px-4 py-3.5 text-right">
-                        <div className="inline-flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedStudent(s);
-                              setSelectedAttempt(s.attempts[0] ?? null);
-                            }}
-                            className="gloss-btn-secondary inline-flex min-h-[34px] items-center gap-1 rounded-lg px-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200"
-                          >
-                            <Eye className="h-3.5 w-3.5" />
-                            <span>Batafsil</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => void handleDeleteStudent(s.id)}
-                            aria-label={`${s.fullName} akkauntini o'chirish`}
-                            title="Akkauntni o'chirish / blokdan chiqarish"
-                            className="gloss-btn-secondary inline-flex h-[34px] w-[34px] items-center justify-center rounded-lg text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/50"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {filteredStudents.map((s) => {
+                    const totalIncidents =
+                      (s.cheatOverview?.totalExits ?? 0) +
+                      (s.cheatOverview?.totalTabSwitches ?? 0);
+                    return (
+                      <tr
+                        key={s.id}
+                        className="transition-colors hover:bg-slate-50/80 dark:hover:bg-white/[0.03]"
+                      >
+                        <td className="px-4 py-3.5 font-semibold text-slate-900 dark:text-white">
+                          {s.fullName}
+                        </td>
+                        <td className="px-4 py-3.5 font-mono-tabular text-slate-700 dark:text-slate-300">
+                          {s.className}
+                        </td>
+                        <td className="px-4 py-3.5 font-mono-tabular font-bold text-indigo-700 dark:text-indigo-400">
+                          {s.totalPoints}
+                        </td>
+                        <td className="px-4 py-3.5 font-mono-tabular text-slate-700 dark:text-slate-300">
+                          {s.completedUnits.length}/{ALL_UNITS.length}
+                        </td>
+                        <td className="px-4 py-3.5 font-mono-tabular text-slate-700 dark:text-slate-300">
+                          {s.averagePercentage}%
+                        </td>
+                        <td className="px-4 py-3.5">
+                          {totalIncidents === 0 ? (
+                            <span className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-950/35 dark:text-emerald-300">
+                              Toza
+                            </span>
+                          ) : s.cheatOverview?.aiSuspected ? (
+                            <span className="inline-flex items-center gap-1 rounded-lg border border-rose-300 bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-700 dark:border-rose-500/40 dark:bg-rose-950/45 dark:text-rose-300">
+                              <Bot className="h-3 w-3" />
+                              <span>AI · {totalIncidents} marta</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:border-amber-500/35 dark:bg-amber-950/40 dark:text-amber-300">
+                              <AlertTriangle className="h-3 w-3" />
+                              <span>{totalIncidents} marta chiqqan</span>
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3.5 text-right">
+                          <div className="inline-flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedStudent(s);
+                                setSelectedAttempt(s.attempts[0] ?? null);
+                              }}
+                              className="gloss-btn-secondary inline-flex min-h-[34px] items-center gap-1 rounded-lg px-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                              <span>Batafsil</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void handleDeleteStudent(s.id)}
+                              aria-label={`${s.fullName} akkauntini o'chirish`}
+                              title="Akkauntni o'chirish"
+                              className="gloss-btn-secondary inline-flex h-[34px] w-[34px] items-center justify-center rounded-lg text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/50"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -737,6 +935,72 @@ export function TeacherPanel({
             </div>
 
             <div className="flex-1 overflow-y-auto p-6">
+              {/* Per-Student Anti-Cheat & AI Usage Inspection */}
+              <section className="mb-6 rounded-2xl border border-slate-200/80 bg-slate-50/75 p-4 dark:border-white/10 dark:bg-black/35">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <ShieldAlert
+                      className={`h-4 w-4 ${
+                        (selectedStudent.cheatLogs ?? []).length > 0
+                          ? 'text-rose-500'
+                          : 'text-emerald-500'
+                      }`}
+                    />
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                      Fullscreen va AI nazorati
+                    </h3>
+                  </div>
+
+                  {(selectedStudent.cheatLogs ?? []).length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => void handleClearStudentCheatLogs(selectedStudent.id)}
+                      className="gloss-btn-secondary inline-flex min-h-[32px] items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                      <span>Yozuvlarni tozalash</span>
+                    </button>
+                  )}
+                </div>
+
+                {(selectedStudent.cheatLogs ?? []).length === 0 ? (
+                  <p className="mt-2 text-xs text-emerald-700 dark:text-emerald-400">
+                    Ushbu oʻquvchida toʻliq ekrandan chiqish yoki AI shubhasi qayd etilmagan.
+                  </p>
+                ) : (
+                  <div className="mt-3 space-y-2.5">
+                    {selectedStudent.cheatLogs.map((log) => (
+                      <div
+                        key={log.unitNumber}
+                        className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-rose-200/80 bg-white/90 px-3.5 py-2.5 text-xs dark:border-rose-500/30 dark:bg-[#121826]"
+                      >
+                        <div>
+                          <div className="font-semibold text-slate-900 dark:text-white">
+                            Unit {log.unitNumber}: {log.unitTitle}
+                          </div>
+                          <div className="mt-0.5 font-mono-tabular text-slate-600 dark:text-slate-400">
+                            Fullscreendan chiqqan: {log.exitCount} marta · Oyna almashtirgan: {log.tabSwitchCount} marta
+                            {log.totalAwaySeconds > 0 ? ` · Tashqarida: ${log.totalAwaySeconds}s` : ''}
+                          </div>
+                        </div>
+
+                        {log.aiSuspected ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-lg border border-rose-300 bg-rose-50 px-2.5 py-1 font-semibold text-rose-700 dark:border-rose-500/40 dark:bg-rose-950/50 dark:text-rose-300">
+                            <Bot className="h-3.5 w-3.5" />
+                            <span>AI ishlatilgan boʻlishi mumkin</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1 font-semibold text-amber-800 dark:border-amber-500/35 dark:bg-amber-950/40 dark:text-amber-300">
+                            <AlertTriangle className="h-3.5 w-3.5" />
+                            <span>Cheater ogohlantirishi</span>
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+
               {selectedStudent.attempts.length === 0 ? (
                 <p className="text-sm text-slate-500 dark:text-slate-400">
                   Hali test topshirilmagan.
@@ -945,7 +1209,7 @@ export function TeacherPanel({
         </div>
       )}
 
-      {/* Change Teacher Password & Cheater Code Modal */}
+      {/* Change Teacher Password Modal */}
       {showPasswordModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-md"
@@ -959,9 +1223,7 @@ export function TeacherPanel({
                 id="pw-modal-title"
                 className="text-lg font-bold text-slate-900 dark:text-white"
               >
-                {passwordTab === 'teacher'
-                  ? 'Oʻqituvchi parolini yangilash'
-                  : 'Cheater parolini yangilash'}
+                Oʻqituvchi parolini yangilash
               </h2>
               <button
                 type="button"
@@ -973,229 +1235,94 @@ export function TeacherPanel({
               </button>
             </div>
 
-            <div
-              className="mt-4 grid grid-cols-2 rounded-xl border border-slate-200 bg-slate-200/70 p-1 dark:border-white/10 dark:bg-black/45"
-              role="tablist"
-              aria-label="Parol turi"
-            >
-              <button
-                type="button"
-                role="tab"
-                aria-selected={passwordTab === 'teacher'}
-                onClick={() => {
-                  setPasswordTab('teacher');
-                  setPwError(null);
-                  setPwSuccess(null);
-                }}
-                className={`min-h-[34px] rounded-lg px-3 text-xs font-semibold transition-colors ${
-                  passwordTab === 'teacher'
-                    ? 'bg-white text-slate-900 shadow-xs dark:bg-indigo-500/20 dark:text-indigo-200'
-                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
-                }`}
-              >
-                Profil paroli
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={passwordTab === 'cheater'}
-                onClick={() => {
-                  setPasswordTab('cheater');
-                  setPwError(null);
-                  setPwSuccess(null);
-                }}
-                className={`min-h-[34px] rounded-lg px-3 text-xs font-semibold transition-colors ${
-                  passwordTab === 'cheater'
-                    ? 'bg-white text-slate-900 shadow-xs dark:bg-indigo-500/20 dark:text-indigo-200'
-                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
-                }`}
-              >
-                Cheater paroli
-              </button>
-            </div>
+            <form onSubmit={handleChangePassword} className="mt-5 space-y-4">
+              <div>
+                <label
+                  htmlFor="old-password"
+                  className="block text-sm font-semibold text-slate-800 dark:text-slate-200"
+                >
+                  Eski parol
+                </label>
+                <input
+                  id="old-password"
+                  type="password"
+                  required
+                  value={oldPassword}
+                  onChange={(e) => setOldPassword(e.target.value)}
+                  className="gloss-input mt-1.5 block w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none dark:text-slate-100"
+                />
+              </div>
 
-            {passwordTab === 'teacher' ? (
-              <form onSubmit={handleChangePassword} className="mt-5 space-y-4">
-                <div>
-                  <label
-                    htmlFor="old-password"
-                    className="block text-sm font-semibold text-slate-800 dark:text-slate-200"
-                  >
-                    Eski parol
-                  </label>
-                  <input
-                    id="old-password"
-                    type="password"
-                    required
-                    value={oldPassword}
-                    onChange={(e) => setOldPassword(e.target.value)}
-                    className="gloss-input mt-1.5 block w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none dark:text-slate-100"
-                  />
+              <div>
+                <label
+                  htmlFor="new-password"
+                  className="block text-sm font-semibold text-slate-800 dark:text-slate-200"
+                >
+                  Yangi parol
+                </label>
+                <input
+                  id="new-password"
+                  type="password"
+                  required
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="gloss-input mt-1.5 block w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none dark:text-slate-100"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="confirm-password"
+                  className="block text-sm font-semibold text-slate-800 dark:text-slate-200"
+                >
+                  Yangi parolni tasdiqlash
+                </label>
+                <input
+                  id="confirm-password"
+                  type="password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="gloss-input mt-1.5 block w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none dark:text-slate-100"
+                />
+              </div>
+
+              {pwError && (
+                <div
+                  role="alert"
+                  className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-800 dark:border-red-500/40 dark:bg-red-950/40 dark:text-red-300"
+                >
+                  {pwError}
                 </div>
+              )}
 
-                <div>
-                  <label
-                    htmlFor="new-password"
-                    className="block text-sm font-semibold text-slate-800 dark:text-slate-200"
-                  >
-                    Yangi parol
-                  </label>
-                  <input
-                    id="new-password"
-                    type="password"
-                    required
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    className="gloss-input mt-1.5 block w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none dark:text-slate-100"
-                  />
+              {pwSuccess && (
+                <div
+                  role="status"
+                  className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-950/40 dark:text-emerald-300"
+                >
+                  <CheckCircle2 className="h-4 w-4 shrink-0" />
+                  <span>{pwSuccess}</span>
                 </div>
+              )}
 
-                <div>
-                  <label
-                    htmlFor="confirm-password"
-                    className="block text-sm font-semibold text-slate-800 dark:text-slate-200"
-                  >
-                    Yangi parolni tasdiqlash
-                  </label>
-                  <input
-                    id="confirm-password"
-                    type="password"
-                    required
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="gloss-input mt-1.5 block w-full rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none dark:text-slate-100"
-                  />
-                </div>
-
-                {pwError && (
-                  <div
-                    role="alert"
-                    className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-800 dark:border-red-500/40 dark:bg-red-950/40 dark:text-red-300"
-                  >
-                    {pwError}
-                  </div>
-                )}
-
-                {pwSuccess && (
-                  <div
-                    role="status"
-                    className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-950/40 dark:text-emerald-300"
-                  >
-                    <CheckCircle2 className="h-4 w-4 shrink-0" />
-                    <span>{pwSuccess}</span>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-end gap-2.5 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowPasswordModal(false)}
-                    className="gloss-btn-secondary min-h-[40px] rounded-xl px-4 text-xs font-semibold text-slate-700 dark:text-slate-200"
-                  >
-                    Yopish
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={pwSubmitting}
-                    className="gloss-btn-primary min-h-[40px] rounded-xl px-5 text-xs font-semibold disabled:opacity-60"
-                  >
-                    {pwSubmitting ? 'Saqlanmoqda...' : 'Parolni saqlash'}
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <form onSubmit={handleChangeCheaterCode} className="mt-5 space-y-4">
-                <div>
-                  <label
-                    htmlFor="old-cheater-code"
-                    className="block text-sm font-semibold text-slate-800 dark:text-slate-200"
-                  >
-                    Eski cheater paroli
-                  </label>
-                  <input
-                    id="old-cheater-code"
-                    type="password"
-                    autoComplete="off"
-                    required
-                    value={oldCheaterCode}
-                    onChange={(e) => setOldCheaterCode(e.target.value)}
-                    className="gloss-input mt-1.5 block w-full rounded-xl px-3.5 py-2.5 font-mono-tabular text-sm text-slate-900 focus:outline-none dark:text-slate-100"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="new-cheater-code"
-                    className="block text-sm font-semibold text-slate-800 dark:text-slate-200"
-                  >
-                    Yangi cheater paroli
-                  </label>
-                  <input
-                    id="new-cheater-code"
-                    type="password"
-                    autoComplete="off"
-                    required
-                    value={newCheaterCode}
-                    onChange={(e) => setNewCheaterCode(e.target.value)}
-                    className="gloss-input mt-1.5 block w-full rounded-xl px-3.5 py-2.5 font-mono-tabular text-sm text-slate-900 focus:outline-none dark:text-slate-100"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="confirm-cheater-code"
-                    className="block text-sm font-semibold text-slate-800 dark:text-slate-200"
-                  >
-                    Yangi cheater parolini tasdiqlash
-                  </label>
-                  <input
-                    id="confirm-cheater-code"
-                    type="password"
-                    autoComplete="off"
-                    required
-                    value={confirmCheaterCode}
-                    onChange={(e) => setConfirmCheaterCode(e.target.value)}
-                    className="gloss-input mt-1.5 block w-full rounded-xl px-3.5 py-2.5 font-mono-tabular text-sm text-slate-900 focus:outline-none dark:text-slate-100"
-                  />
-                </div>
-
-                {pwError && (
-                  <div
-                    role="alert"
-                    className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-800 dark:border-red-500/40 dark:bg-red-950/40 dark:text-red-300"
-                  >
-                    {pwError}
-                  </div>
-                )}
-
-                {pwSuccess && (
-                  <div
-                    role="status"
-                    className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-950/40 dark:text-emerald-300"
-                  >
-                    <CheckCircle2 className="h-4 w-4 shrink-0" />
-                    <span>{pwSuccess}</span>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-end gap-2.5 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowPasswordModal(false)}
-                    className="gloss-btn-secondary min-h-[40px] rounded-xl px-4 text-xs font-semibold text-slate-700 dark:text-slate-200"
-                  >
-                    Yopish
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={pwSubmitting}
-                    className="gloss-btn-primary min-h-[40px] rounded-xl px-5 text-xs font-semibold disabled:opacity-60"
-                  >
-                    {pwSubmitting ? 'Saqlanmoqda...' : 'Cheater parolini saqlash'}
-                  </button>
-                </div>
-              </form>
-            )}
+              <div className="flex items-center justify-end gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowPasswordModal(false)}
+                  className="gloss-btn-secondary min-h-[40px] rounded-xl px-4 text-xs font-semibold text-slate-700 dark:text-slate-200"
+                >
+                  Yopish
+                </button>
+                <button
+                  type="submit"
+                  disabled={pwSubmitting}
+                  className="gloss-btn-primary min-h-[40px] rounded-xl px-5 text-xs font-semibold disabled:opacity-60"
+                >
+                  {pwSubmitting ? 'Saqlanmoqda...' : 'Parolni saqlash'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
