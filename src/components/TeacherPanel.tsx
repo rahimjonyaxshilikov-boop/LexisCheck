@@ -40,7 +40,10 @@ import { ALL_UNITS } from '../data/units';
 import {
   analyzeClassAndMistakes,
   analyzeStudentProgress,
+  collectStudentMistakeBank,
 } from '../utils/studentAnalytics';
+import { attemptMistakesToAiInputs } from '../utils/aiReviewSchema';
+import { AiReviewRecommendations } from './AiReviewRecommendations';
 import { ProgressLineChart, TrendBadge } from './AnalyticsPrimitives';
 
 const TIMER_PRESET_MINUTES = [5, 10, 15, 20, 30, 45] as const;
@@ -75,6 +78,7 @@ export function TeacherPanel({
   const [selectedStudent, setSelectedStudent] =
     useState<StudentSummaryForTeacher | null>(null);
   const [selectedAttempt, setSelectedAttempt] = useState<TestAttempt | null>(null);
+  const [teacherAiScope, setTeacherAiScope] = useState<'attempt' | 'overall'>('attempt');
 
   // Change Password modal state
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -308,6 +312,29 @@ export function TeacherPanel({
     () => (selectedStudent ? analyzeStudentProgress(selectedStudent.attempts) : null),
     [selectedStudent],
   );
+
+  const selectedStudentMistakeBank = useMemo(() => {
+    if (!selectedStudent) return [];
+    return collectStudentMistakeBank(selectedStudent.attempts).map((item) => ({
+      questionId: item.questionId,
+      unitNumber: item.unitNumber,
+      unitTitle: item.unitTitle,
+      prompt: item.prompt,
+      selectedAnswer: item.lastSelectedAnswer,
+      correctAnswer: item.correctAnswer,
+      explanation: item.explanation,
+      missCount: item.missCount,
+    }));
+  }, [selectedStudent]);
+
+  const selectedAttemptMistakes = useMemo(() => {
+    if (!selectedAttempt) return [];
+    return attemptMistakesToAiInputs(
+      selectedAttempt.unitNumber,
+      selectedAttempt.unitTitle,
+      selectedAttempt.mistakes,
+    );
+  }, [selectedAttempt]);
 
   const classAndMistakeStats = useMemo(
     () =>
@@ -1153,6 +1180,83 @@ export function TeacherPanel({
                         </table>
                       </div>
                     </div>
+                  </section>
+
+                  {/* Teacher View: AI Review Recommendations for Selected Student */}
+                  <section data-testid="teacher-student-ai-recommendations" className="space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                        AI-tavsiya boʻyicha takrorlash tahlili
+                      </span>
+                      <div className="inline-flex rounded-xl border border-slate-200 bg-slate-100 p-1 dark:border-white/10 dark:bg-black/40">
+                        <button
+                          type="button"
+                          onClick={() => setTeacherAiScope('attempt')}
+                          disabled={!selectedAttempt}
+                          className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors disabled:opacity-40 ${
+                            teacherAiScope === 'attempt'
+                              ? 'bg-white text-slate-900 shadow-xs dark:bg-indigo-500/25 dark:text-indigo-200'
+                              : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
+                          }`}
+                        >
+                          {selectedAttempt ? `Unit ${selectedAttempt.unitNumber}` : 'Tanlangan test'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setTeacherAiScope('overall')}
+                          className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
+                            teacherAiScope === 'overall'
+                              ? 'bg-white text-slate-900 shadow-xs dark:bg-indigo-500/25 dark:text-indigo-200'
+                              : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
+                          }`}
+                        >
+                          Barcha xatolar ({selectedStudentMistakeBank.length})
+                        </button>
+                      </div>
+                    </div>
+
+                    {(() => {
+                      const useAttemptScope =
+                        teacherAiScope === 'attempt' && selectedAttempt !== null;
+                      const cacheKey = useAttemptScope
+                        ? `attempt:${selectedAttempt!.id}`
+                        : 'overall:mistakes';
+                      const scopeLabel = useAttemptScope
+                        ? `Unit ${selectedAttempt!.unitNumber}: ${selectedAttempt!.unitTitle}`
+                        : `${selectedStudent.fullName} — barcha xatolar`;
+                      const mistakesForAi = useAttemptScope
+                        ? selectedAttemptMistakes
+                        : selectedStudentMistakeBank;
+
+                      return (
+                        <AiReviewRecommendations
+                          studentId={selectedStudent.id}
+                          studentName={selectedStudent.fullName}
+                          scopeLabel={scopeLabel}
+                          audience="teacher"
+                          cacheKey={cacheKey}
+                          mistakes={mistakesForAi}
+                          initialRecommendation={
+                            selectedStudent.aiRecommendations?.[cacheKey] ?? null
+                          }
+                          onRecommendationSaved={(rec, updatedProfile) => {
+                            const nextStudent: StudentSummaryForTeacher = updatedProfile ?? {
+                              ...selectedStudent,
+                              aiRecommendations: {
+                                ...(selectedStudent.aiRecommendations ?? {}),
+                                [cacheKey]: rec,
+                              },
+                            };
+                            setSelectedStudent(nextStudent);
+                            setStudents((prev) =>
+                              prev.map((st) =>
+                                st.id === nextStudent.id ? nextStudent : st,
+                              ),
+                            );
+                          }}
+                        />
+                      );
+                    })()}
                   </section>
 
                   {/* Selected Attempt Mistake Details */}

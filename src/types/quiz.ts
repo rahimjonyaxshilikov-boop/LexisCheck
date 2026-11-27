@@ -82,6 +82,37 @@ export interface RecordCheatEventPayload {
   awaySeconds?: number;
 }
 
+export type AiReviewPriority = 'high' | 'medium' | 'low';
+
+export interface AiTopicRecommendation {
+  topicTitle: string;
+  unitNumber: number;
+  priority: AiReviewPriority;
+  reason: string;
+  keyWords: string[];
+  practiceTip: string;
+}
+
+export interface AiReviewRecommendation {
+  summary: string;
+  strengthsNote: string;
+  recommendedTopics: AiTopicRecommendation[];
+  studyPlan: string[];
+  generatedAt: string;
+  model: string;
+}
+
+export interface AiMistakeInput {
+  questionId: string;
+  unitNumber: number;
+  unitTitle: string;
+  prompt: string;
+  selectedAnswer: string;
+  correctAnswer: string;
+  explanation: string;
+  missCount?: number;
+}
+
 export interface StudentProfile {
   id: string;
   fullName: string;
@@ -93,6 +124,7 @@ export interface StudentProfile {
   attempts: TestAttempt[];
   cheatLogs: UnitCheatSummary[];
   cheatOverview: StudentCheatOverview;
+  aiRecommendations?: Record<string, AiReviewRecommendation>;
   createdAt: string;
 }
 

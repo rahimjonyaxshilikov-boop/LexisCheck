@@ -228,6 +228,7 @@ export default function App() {
             const unit = getUnitByNumber(unitNumber);
             if (unit) handleStartUnit(unit);
           }}
+          onStudentUpdated={(updated) => setStudent(updated)}
         />
       )}
 

@@ -2,5 +2,5 @@
   "name": "LexisCheck — Upper-Intermediate Vocabulary Tests",
   "description": "English Vocabulary in Use Upper-Intermediate (1–101-unitlar) bo'yicha o'quvchilar lug'at bilimini tekshiruvchi va baholovchi interaktiv test platformasi.",
   "requestFramePermissions": [],
-  "majorCapabilities": []
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

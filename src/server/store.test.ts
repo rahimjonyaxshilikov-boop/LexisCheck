@@ -332,3 +332,54 @@ test('store upgrades legacy surname-first student record when re-entered properl
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('store saves AI review recommendations per student and exposes them to teacher dashboard', () => {
+  const { store, cleanup } = createTempStore();
+  try {
+    const created = store.enterStudent('Madina Tursunova', '10-01');
+    assert.equal(created.ok, true);
+    if (!created.ok) return;
+
+    const saved = store.saveAiRecommendation({
+      studentToken: created.token,
+      cacheKey: 'attempt:att-1',
+      recommendation: {
+        summary: 'Collocation mavzusini takrorlash kerak.',
+        strengthsNote: 'Register farqlarini yaxshi biladi.',
+        recommendedTopics: [
+          {
+            topicTitle: 'Verb + noun collocations',
+            unitNumber: 1,
+            priority: 'high',
+            reason: '"take sides" o\'rniga "hold sides" tanlangan.',
+            keyWords: ['take sides', 'express an opinion'],
+            practiceTip: 'Misollarni gap ichida yozing.',
+          },
+        ],
+        studyPlan: ["Unit 1 lug'atini qayta ko'rish"],
+        generatedAt: '2026-11-27T12:00:00.000Z',
+        model: 'gemini-4-hydrogen',
+      },
+    });
+
+    assert.ok(saved);
+    assert.ok(saved.aiRecommendations?.['attempt:att-1']);
+
+    const teacher = store.loginTeacher('Jalolova@2026');
+    assert.equal(teacher.ok, true);
+    if (!teacher.ok) return;
+
+    const dashboard = store.getTeacherDashboard(teacher.token);
+    assert.equal(dashboard.ok, true);
+    if (!dashboard.ok) return;
+
+    const target = dashboard.students.find((s) => s.id === created.profile.id);
+    assert.ok(target?.aiRecommendations?.['attempt:att-1']);
+    assert.equal(
+      target.aiRecommendations['attempt:att-1'].recommendedTopics[0].topicTitle,
+      'Verb + noun collocations',
+    );
+  } finally {
+    cleanup();
+  }
+});

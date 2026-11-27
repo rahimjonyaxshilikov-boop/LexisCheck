@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import type {
+  AiReviewRecommendation,
   RecordCheatEventPayload,
   StudentProfile,
   StudentSummaryForTeacher,
@@ -37,6 +38,7 @@ export interface StoredStudent {
   studiedUnits?: number[];
   attempts: TestAttempt[];
   cheatLogs?: UnitCheatSummary[];
+  aiRecommendations?: Record<string, AiReviewRecommendation>;
   createdAt: string;
 }
 
@@ -102,6 +104,7 @@ function toStudentProfile(student: StoredStudent): StudentProfile {
     attempts: sortedAttempts,
     cheatLogs,
     cheatOverview: summarizeStudentCheatLogs(cheatLogs),
+    aiRecommendations: student.aiRecommendations ?? {},
     createdAt: student.createdAt,
   };
 }
@@ -551,5 +554,34 @@ export class AppStore {
     student.cheatLogs = [];
     this.persist();
     return { ok: true, student: toTeacherSummary(student) };
+  }
+
+  saveAiRecommendation(params: {
+    studentToken?: string;
+    teacherToken?: string;
+    studentId?: string;
+    cacheKey: string;
+    recommendation: AiReviewRecommendation;
+  }): StudentSummaryForTeacher | null {
+    const cleanKey = params.cacheKey.trim().slice(0, 120);
+    if (!cleanKey) return null;
+
+    let target: StoredStudent | undefined;
+    if (params.teacherToken && this.isValidTeacherToken(params.teacherToken) && params.studentId) {
+      target = this.db.students.find((s) => s.id === params.studentId);
+    } else if (params.studentToken) {
+      target = this.db.students.find((s) => safeTokenMatch(params.studentToken!, s.secretToken));
+    }
+
+    if (!target) return null;
+
+    const existing = target.aiRecommendations ?? {};
+    const entries = Object.entries({ ...existing, [cleanKey]: params.recommendation })
+      .sort((a, b) => new Date(b[1].generatedAt).getTime() - new Date(a[1].generatedAt).getTime())
+      .slice(0, 30);
+
+    target.aiRecommendations = Object.fromEntries(entries);
+    this.persist();
+    return toTeacherSummary(target);
   }
 }

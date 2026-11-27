@@ -22,12 +22,15 @@ import {
   renderResultCardBlob,
 } from '../utils/resultShare';
 import { TrendBadge } from './AnalyticsPrimitives';
+import { AiReviewRecommendations } from './AiReviewRecommendations';
+import { attemptMistakesToAiInputs } from '../utils/aiReviewSchema';
 
 interface ResultsViewProps {
   student: StudentProfile;
   attempt: TestAttempt;
   onBackToUnits: () => void;
   onStartUnitNumber: (unitNumber: number) => void;
+  onStudentUpdated?: (profile: StudentProfile) => void;
 }
 
 export function ResultsView({
@@ -35,6 +38,7 @@ export function ResultsView({
   attempt,
   onBackToUnits,
   onStartUnitNumber,
+  onStudentUpdated,
 }: ResultsViewProps) {
   const [busyAction, setBusyAction] = useState<'save' | 'share' | null>(null);
   const [actionStatus, setActionStatus] = useState<string | null>(null);
@@ -53,6 +57,18 @@ export function ResultsView({
         : undefined;
     return buildTelegramShareUrl(shareText, origin);
   }, [shareText]);
+
+  const aiMistakeInputs = useMemo(
+    () =>
+      attemptMistakesToAiInputs(
+        attempt.unitNumber,
+        attempt.unitTitle,
+        attempt.mistakes,
+      ),
+    [attempt.unitNumber, attempt.unitTitle, attempt.mistakes],
+  );
+
+  const aiCacheKey = `attempt:${attempt.id}`;
 
   const previousSameUnit = useMemo(() => {
     const sameUnit = student.attempts
@@ -384,6 +400,24 @@ export function ResultsView({
           </div>
         </div>
       </section>
+
+      {/* AI Review Recommendations */}
+      <div className="mt-8">
+        <AiReviewRecommendations
+          studentId={student.id}
+          studentName={student.fullName}
+          scopeLabel={`Unit ${attempt.unitNumber}: ${attempt.unitTitle}`}
+          audience="student"
+          cacheKey={aiCacheKey}
+          mistakes={aiMistakeInputs}
+          initialRecommendation={student.aiRecommendations?.[aiCacheKey] ?? null}
+          onRecommendationSaved={(_rec, updatedProfile) => {
+            if (updatedProfile) {
+              onStudentUpdated?.(updatedProfile);
+            }
+          }}
+        />
+      </div>
 
       {/* Mistakes Section Underneath */}
       <section className="mt-8" aria-labelledby="mistakes-heading">

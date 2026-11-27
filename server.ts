@@ -1,8 +1,11 @@
+import 'dotenv/config';
 import express from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createServer as createViteServer } from 'vite';
+import { AiServiceError, generateAiReviewRecommendations } from './src/server/aiReview';
 import { AppStore } from './src/server/store';
+import { buildSitemapXml, parseSitemapIndex } from './src/utils/sitemapBuilder';
 
 function getRequestOrigin(req: express.Request): string {
   const protoHeader = req.header('x-forwarded-proto');
@@ -253,6 +256,67 @@ async function startServer() {
     res.json({ ok: true });
   });
 
+  // Generate AI review topic recommendations for missed quiz questions
+  app.post('/api/ai/review-recommendations', async (req, res) => {
+    const studentToken = req.header('x-student-token') ?? undefined;
+    const teacherToken = req.header('x-teacher-token') ?? undefined;
+
+    const studentProfile = store.getStudentByToken(studentToken);
+    const isTeacher = store.isValidTeacherToken(teacherToken);
+
+    if (!studentProfile && !isTeacher) {
+      res.status(401).json({ error: "Ruxsat yo'q. Qaytadan kiring." });
+      return;
+    }
+
+    const { studentId, studentName, scopeLabel, audience, cacheKey, mistakes } = req.body ?? {};
+    if (
+      typeof studentName !== 'string' ||
+      typeof scopeLabel !== 'string' ||
+      !Array.isArray(mistakes) ||
+      mistakes.length === 0
+    ) {
+      res.status(400).json({ error: "AI tahlil uchun xato savollar ro'yxati yuborilmadi." });
+      return;
+    }
+
+    const resolvedAudience: 'student' | 'teacher' =
+      isTeacher && audience === 'teacher' ? 'teacher' : 'student';
+
+    try {
+      const recommendation = await generateAiReviewRecommendations({
+        studentName,
+        scopeLabel,
+        audience: resolvedAudience,
+        mistakes,
+      });
+
+      const updatedStudent =
+        typeof cacheKey === 'string' && cacheKey.trim()
+          ? store.saveAiRecommendation({
+              studentToken,
+              teacherToken,
+              studentId: typeof studentId === 'string' ? studentId : studentProfile?.id,
+              cacheKey,
+              recommendation,
+            })
+          : null;
+
+      res.json({
+        recommendation,
+        profile: updatedStudent,
+      });
+    } catch (err) {
+      if (err instanceof AiServiceError) {
+        res.status(err.status).json({ error: err.message, code: err.code });
+        return;
+      }
+      res.status(500).json({
+        error: err instanceof Error ? err.message : "AI tahlilini bajarib bo'lmadi.",
+      });
+    }
+  });
+
   // Explicit SEO & Google Search Console verification routes (never shadowed by SPA fallback)
   app.get(/^\/(google[a-zA-Z0-9]+\.html)$/, (req, res, next) => {
     const filename = path.basename(req.params[0]);
@@ -280,17 +344,12 @@ async function startServer() {
   app.get('/sitemap.xml', (req, res) => {
     const origin = getRequestOrigin(req);
     const today = new Date().toISOString().slice(0, 10);
+    const indexPath = path.resolve(process.cwd(), 'data', 'sitemap_index.json');
+    const unitEntries = fs.existsSync(indexPath)
+      ? parseSitemapIndex(fs.readFileSync(indexPath, 'utf8')).units
+      : [];
     res.type('application/xml; charset=utf-8');
-    res.send(`<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>${origin}/</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
-  </url>
-</urlset>
-`);
+    res.send(buildSitemapXml(origin, unitEntries, today));
   });
 
   if (process.env.NODE_ENV === 'production') {

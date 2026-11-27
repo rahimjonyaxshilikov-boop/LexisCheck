@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import fs from 'node:fs';
 import path from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
+import { buildSitemapXml, parseSitemapIndex } from './src/utils/sitemapBuilder.ts';
 
 function resolveDeployOrigin(): string | null {
   const candidates = [
@@ -25,6 +26,15 @@ function resolveDeployOrigin(): string | null {
   return null;
 }
 
+function loadUnitSitemapEntries() {
+  const indexPath = path.resolve(import.meta.dirname, 'data', 'sitemap_index.json');
+  if (!fs.existsSync(indexPath)) {
+    return [];
+  }
+  const raw = fs.readFileSync(indexPath, 'utf8');
+  return parseSitemapIndex(raw).units;
+}
+
 function lexischeckSeoBuildPlugin(): Plugin {
   let outDir = 'dist';
   return {
@@ -39,16 +49,8 @@ function lexischeckSeoBuildPlugin(): Plugin {
       if (!origin || !fs.existsSync(distDir)) return;
 
       const today = new Date().toISOString().slice(0, 10);
-      const sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>${origin}/</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
-  </url>
-</urlset>
-`;
+      const unitEntries = loadUnitSitemapEntries();
+      const sitemapXml = buildSitemapXml(origin, unitEntries, today);
       fs.writeFileSync(path.join(distDir, 'sitemap.xml'), sitemapXml, 'utf8');
 
       const robotsTxt = `User-agent: *\nAllow: /\nSitemap: ${origin}/sitemap.xml\n`;

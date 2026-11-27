@@ -1,4 +1,6 @@
 import type {
+  AiMistakeInput,
+  AiReviewRecommendation,
   RecordCheatEventPayload,
   StudentProfile,
   StudentSummaryForTeacher,
@@ -444,6 +446,57 @@ export async function updateTestDurationMinutes(minutes: number): Promise<number
   } catch (err) {
     if (err instanceof BackendUnavailableError) {
       return localUpdateTestDurationMinutes(token, minutes);
+    }
+    throw err;
+  }
+}
+
+export async function requestAiReviewRecommendations(params: {
+  studentId?: string;
+  studentName: string;
+  scopeLabel: string;
+  audience: 'student' | 'teacher';
+  cacheKey: string;
+  mistakes: readonly AiMistakeInput[];
+}): Promise<{
+  recommendation: AiReviewRecommendation;
+  profile: StudentSummaryForTeacher | null;
+}> {
+  const studentToken = getSavedStudentToken();
+  const teacherToken = getSavedTeacherToken();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (params.audience === 'teacher' && teacherToken) {
+    headers['x-teacher-token'] = teacherToken;
+  } else if (studentToken) {
+    headers['x-student-token'] = studentToken;
+  } else if (teacherToken) {
+    headers['x-teacher-token'] = teacherToken;
+  }
+
+  try {
+    const { ok, data } = await fetchBackendJson('/api/ai/review-recommendations', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+
+    if (!ok) {
+      throw new Error(
+        (data.error as string) || "AI tavsiyalarini olishda xatolik yuz berdi.",
+      );
+    }
+
+    return {
+      recommendation: data.recommendation as AiReviewRecommendation,
+      profile: (data.profile as StudentSummaryForTeacher | null) ?? null,
+    };
+  } catch (err) {
+    if (err instanceof BackendUnavailableError) {
+      throw new Error(
+        "AI tavsiya xizmati server API bilan ishlaydi. Statik muhitda AI tahlili mavjud emas.",
+      );
     }
     throw err;
   }
