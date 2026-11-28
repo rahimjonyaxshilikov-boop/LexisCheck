@@ -10,6 +10,7 @@ import {
   localLoginTeacher,
   localLookupStudent,
   localRecordCheatEvent,
+  localSaveAiRecommendation,
   LocalStudentEntryError,
   localSubmitAttempt,
   localUpdateTeacherPassword,
@@ -141,3 +142,47 @@ test('localFallbackStore rejects surname-first, deduplicates apostrophes, and bl
   const teacherToken = await localLoginTeacher('Jalolova@2026', storage);
   assert.equal(localFetchTeacherDashboard(teacherToken, storage).length, 2);
 });
+
+test('localFallbackStore persists AI review recommendations for both student and teacher', async () => {
+  const storage = createMemoryStorage();
+  const entered = localEnterStudent('Aziza Karimova', '8-03', null, storage);
+
+  const saved = localSaveAiRecommendation(
+    {
+      studentToken: entered.token,
+      cacheKey: 'attempt:u1',
+      recommendation: {
+        summary: 'Collocation mavzusini takrorlash kerak.',
+        strengthsNote: 'Yaxshi boshlanish.',
+        recommendedTopics: [
+          {
+            topicTitle: 'Verb + noun collocations',
+            unitNumber: 1,
+            priority: 'high',
+            reason: 'Fe’l + ot birikmalarida xato bor.',
+            keyWords: ['earn a salary', 'make progress'],
+            practiceTip: 'Gaplar tuzib yodlang.',
+          },
+        ],
+        studyPlan: ['Unit 1 ni qayta o‘qish'],
+        generatedAt: '2026-11-27T12:00:00.000Z',
+        model: 'gemini-4-hydrogen',
+      },
+    },
+    storage,
+  );
+
+  assert.ok(saved);
+  assert.equal(
+    localGetStudentByToken(entered.token, storage)?.aiRecommendations?.['attempt:u1']?.summary,
+    'Collocation mavzusini takrorlash kerak.',
+  );
+
+  const teacherToken = await localLoginTeacher('Jalolova@2026', storage);
+  const dashboard = localFetchTeacherDashboard(teacherToken, storage);
+  assert.equal(
+    dashboard[0].aiRecommendations?.['attempt:u1']?.recommendedTopics[0].topicTitle,
+    'Verb + noun collocations',
+  );
+});
+

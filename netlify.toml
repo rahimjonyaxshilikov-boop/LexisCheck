@@ -2,6 +2,10 @@
   command = "npm run build"
   publish = "dist"
 
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
 [[headers]]
   for = "/google*.html"
   [headers.values]
@@ -17,6 +21,12 @@
   for = "/sitemap.xml"
   [headers.values]
     Content-Type = "application/xml; charset=utf-8"
+
+[[redirects]]
+  from = "/api/ai/review-recommendations"
+  to = "/.netlify/functions/ai-review-recommendations"
+  status = 200
+  force = true
 
 [[redirects]]
   from = "/*"

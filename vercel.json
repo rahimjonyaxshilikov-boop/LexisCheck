@@ -38,7 +38,7 @@
   ],
   "rewrites": [
     {
-      "source": "/((?!assets/|google[a-zA-Z0-9]+\\.html|robots\\.txt|sitemap\\.xml|favicon\\.svg|manifest\\.webmanifest|og-cover\\.jpg).*)",
+      "source": "/((?!api/|assets/|google[a-zA-Z0-9]+\\.html|robots\\.txt|sitemap\\.xml|favicon\\.svg|manifest\\.webmanifest|og-cover\\.jpg).*)",
       "destination": "/index.html"
     }
   ]

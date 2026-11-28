@@ -17,6 +17,7 @@ import {
   localLoginTeacher,
   localLookupStudent,
   localRecordCheatEvent,
+  localSaveAiRecommendation,
   localSubmitAttempt,
   localUpdateTeacherPassword,
   localUpdateTestDurationMinutes,
@@ -27,9 +28,12 @@ const STUDENT_TOKEN_KEY = 'lexischeck_student_token';
 const TEACHER_TOKEN_KEY = 'lexischeck_teacher_token';
 
 class BackendUnavailableError extends Error {
-  constructor() {
+  status?: number;
+
+  constructor(status?: number) {
     super('Backend API unavailable');
     this.name = 'BackendUnavailableError';
+    this.status = status;
   }
 }
 
@@ -46,7 +50,7 @@ async function fetchBackendJson(
 
   const contentType = res.headers.get('content-type') || '';
   if (!contentType.includes('application/json')) {
-    throw new BackendUnavailableError();
+    throw new BackendUnavailableError(res.status);
   }
 
   const data = (await res.json()) as Record<string, unknown>;
@@ -475,29 +479,57 @@ export async function requestAiReviewRecommendations(params: {
     headers['x-teacher-token'] = teacherToken;
   }
 
-  try {
-    const { ok, data } = await fetchBackendJson('/api/ai/review-recommendations', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(params),
-    });
+  const endpoints = [
+    '/api/ai/review-recommendations',
+    '/.netlify/functions/ai-review-recommendations',
+  ];
 
-    if (!ok) {
-      throw new Error(
-        (data.error as string) || "AI tavsiyalarini olishda xatolik yuz berdi.",
-      );
-    }
+  let lastUnavailableErr: BackendUnavailableError | null = null;
+  for (const endpoint of endpoints) {
+    try {
+      const { ok, data } = await fetchBackendJson(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(params),
+      });
 
-    return {
-      recommendation: data.recommendation as AiReviewRecommendation,
-      profile: (data.profile as StudentSummaryForTeacher | null) ?? null,
-    };
-  } catch (err) {
-    if (err instanceof BackendUnavailableError) {
-      throw new Error(
-        "AI tavsiya xizmati server API bilan ishlaydi. Statik muhitda AI tahlili mavjud emas.",
-      );
+      if (!ok) {
+        throw new Error(
+          (data.error as string) || "AI tavsiyalarini olishda xatolik yuz berdi.",
+        );
+      }
+
+      const recommendation = data.recommendation as AiReviewRecommendation;
+      const serverProfile = (data.profile as StudentSummaryForTeacher | null) ?? null;
+      const savedProfile =
+        serverProfile ??
+        localSaveAiRecommendation({
+          studentToken,
+          teacherToken,
+          studentId: params.studentId,
+          cacheKey: params.cacheKey,
+          recommendation,
+        });
+
+      return {
+        recommendation,
+        profile: savedProfile,
+      };
+    } catch (err) {
+      if (err instanceof BackendUnavailableError) {
+        lastUnavailableErr = err;
+        continue;
+      }
+      throw err;
     }
-    throw err;
   }
+
+  if (lastUnavailableErr && typeof lastUnavailableErr.status === 'number' && lastUnavailableErr.status >= 500) {
+    throw new Error(
+      `AI serverida vaqtinchalik xatolik yuz berdi (HTTP ${lastUnavailableErr.status}).`,
+    );
+  }
+  throw new Error(
+    "Bulutli Gemini AI serveri ulanmagan (statik muhit yoki GEMINI_API_KEY sozlanmagan).",
+  );
 }

@@ -120,3 +120,30 @@ test('parseAiReviewJson parses valid JSON and strips markdown fences', () => {
 test('parseAiReviewJson throws when summary or recommendedTopics are missing', () => {
   assert.throws(() => parseAiReviewJson('{"summary":"","recommendedTopics":[]}', 1));
 });
+
+test('parseAiReviewJson extracts JSON wrapped in prose and supplies fallback reason', () => {
+  const wrapped =
+    'Mana tahlil natijasi:\n' +
+    JSON.stringify({
+      summary: 'Unit 2 boyicha collocationlarni takrorlang.',
+      strengthsNote: '',
+      recommendedTopics: [
+        {
+          topicTitle: 'Collocations with salary',
+          unitNumber: 2,
+          priority: 'high',
+          reason: '',
+          keyWords: ['earn a high salary'],
+          practiceTip: 'Misollar yozing.',
+        },
+      ],
+      studyPlan: ['Unit 2 ni takrorlash'],
+    }) +
+    '\nOmad!';
+
+  const parsed = parseAiReviewJson(wrapped, 2);
+  assert.equal(parsed.recommendedTopics.length, 1);
+  assert.equal(parsed.recommendedTopics[0].unitNumber, 2);
+  assert.ok(parsed.recommendedTopics[0].reason.includes('Unit 2'));
+});
+

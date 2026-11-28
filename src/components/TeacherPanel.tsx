@@ -734,6 +734,7 @@ export function TeacherPanel({
                               onClick={() => {
                                 setSelectedStudent(student);
                                 setSelectedAttempt(student.attempts[0] ?? null);
+                                setTeacherAiScope('attempt');
                               }}
                               className="gloss-btn-secondary inline-flex min-h-[34px] items-center gap-1 rounded-lg px-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200"
                             >
@@ -902,6 +903,7 @@ export function TeacherPanel({
                               onClick={() => {
                                 setSelectedStudent(s);
                                 setSelectedAttempt(s.attempts[0] ?? null);
+                                setTeacherAiScope('attempt');
                               }}
                               className="gloss-btn-secondary inline-flex min-h-[34px] items-center gap-1 rounded-lg px-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200"
                             >

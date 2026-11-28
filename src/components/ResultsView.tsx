@@ -144,19 +144,27 @@ export function ResultsView({
         setActionStatus('Natija skrinshoti ulashildi.');
       } else {
         triggerBlobDownload(blob, filename);
-        if (navigator.clipboard?.writeText) {
-          await navigator.clipboard.writeText(shareText);
+        try {
+          if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(shareText);
+          }
+          setActionStatus(
+            'Skrinshot yuklab olindi va natija matni nusxalandi — Telegramga yuborishingiz mumkin.',
+          );
+        } catch {
+          setActionStatus(
+            'Skrinshot yuklab olindi. Uni Telegram orqali yuborishingiz mumkin.',
+          );
         }
-        setActionStatus(
-          'Skrinshot yuklab olindi va natija matni nusxalandi — Telegramga yuborishingiz mumkin.',
-        );
       }
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') {
         setActionStatus(null);
       } else {
         setActionStatus(
-          'Skrinshot yuklab olindi. Uni Telegram orqali yuborishingiz mumkin.',
+          err instanceof Error
+            ? err.message
+            : 'Skrinshotni ulashishda xatolik yuz berdi.',
         );
       }
     } finally {
@@ -411,9 +419,17 @@ export function ResultsView({
           cacheKey={aiCacheKey}
           mistakes={aiMistakeInputs}
           initialRecommendation={student.aiRecommendations?.[aiCacheKey] ?? null}
-          onRecommendationSaved={(_rec, updatedProfile) => {
+          onRecommendationSaved={(rec, updatedProfile) => {
             if (updatedProfile) {
               onStudentUpdated?.(updatedProfile);
+            } else {
+              onStudentUpdated?.({
+                ...student,
+                aiRecommendations: {
+                  ...(student.aiRecommendations ?? {}),
+                  [aiCacheKey]: rec,
+                },
+              });
             }
           }}
         />

@@ -254,20 +254,39 @@ export function TestRunner({
     }
   }
 
+  const selectOption = useCallback(
+    (optionIdx: number) => {
+      if (!currentQuestion || submitting) return;
+      if (!fullscreenEnteredRef.current && !isFullscreenActive()) {
+        void requestAppFullscreen();
+      }
+      setAnswers((prev) => ({
+        ...prev,
+        [currentQuestion.id]: optionIdx,
+      }));
+    },
+    [currentQuestion, submitting],
+  );
+
   // Configurable countdown timer (15 minutes default)
   useEffect(() => {
     const interval = window.setInterval(() => {
       setSecondsLeft((prev) => {
         if (prev <= 1) {
           window.clearInterval(interval);
-          void executeSubmit();
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
     return () => window.clearInterval(interval);
-  }, [executeSubmit]);
+  }, []);
+
+  useEffect(() => {
+    if (secondsLeft === 0 && !submittedRef.current) {
+      void executeSubmit();
+    }
+  }, [secondsLeft, executeSubmit]);
 
   // Keyboard shortcuts for desktop comfort (1-4 / A-D to pick, F to flag, arrows to navigate)
   useEffect(() => {
@@ -290,18 +309,17 @@ export function TestRunner({
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  });
-
-  function selectOption(optionIdx: number) {
-    if (!currentQuestion || submitting) return;
-    if (!fullscreenEnteredRef.current && !isFullscreenActive()) {
-      void requestAppFullscreen();
-    }
-    setAnswers((prev) => ({
-      ...prev,
-      [currentQuestion.id]: optionIdx,
-    }));
-  }
+  }, [
+    cheaterMenuOpen,
+    confirmExit,
+    confirmSubmit,
+    showNavDrawer,
+    currentQuestion,
+    currentIndex,
+    totalCount,
+    toggleFlag,
+    selectOption,
+  ]);
 
   const isTimeLow = secondsLeft <= 60;
   const progressPercent = Math.round(((currentIndex + 1) / totalCount) * 100);

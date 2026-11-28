@@ -1,4 +1,5 @@
 import type {
+  AiReviewRecommendation,
   RecordCheatEventPayload,
   StudentProfile,
   StudentSummaryForTeacher,
@@ -47,6 +48,7 @@ interface StoredLocalStudent {
   studiedUnits?: number[];
   attempts: TestAttempt[];
   cheatLogs?: UnitCheatSummary[];
+  aiRecommendations?: Record<string, AiReviewRecommendation>;
   createdAt: string;
 }
 
@@ -181,6 +183,7 @@ function toProfile(student: StoredLocalStudent): StudentProfile {
     attempts: sortedAttempts,
     cheatLogs,
     cheatOverview: summarizeStudentCheatLogs(cheatLogs),
+    aiRecommendations: student.aiRecommendations ?? {},
     createdAt: student.createdAt,
   };
 }
@@ -540,4 +543,47 @@ export function localUpdateTestDurationMinutes(
   db.testDurationMinutes = validated.minutes;
   saveDb(storage, db);
   return validated.minutes;
+}
+
+export function localSaveAiRecommendation(
+  params: {
+    studentToken?: string | null;
+    teacherToken?: string | null;
+    studentId?: string;
+    cacheKey: string;
+    recommendation: AiReviewRecommendation;
+  },
+  customStorage?: StorageLike,
+): StudentSummaryForTeacher | null {
+  const cleanKey = params.cacheKey.trim().slice(0, 120);
+  if (!cleanKey) return null;
+
+  const storage = getStorage(customStorage);
+  const db = loadDb(storage);
+
+  let target: StoredLocalStudent | undefined;
+  if (
+    params.teacherToken &&
+    db.teacherTokens.includes(params.teacherToken) &&
+    params.studentId
+  ) {
+    target = db.students.find((s) => s.id === params.studentId);
+  } else if (params.studentToken) {
+    target = db.students.find((s) => s.secretToken === params.studentToken);
+  }
+
+  if (!target) return null;
+
+  const existing = target.aiRecommendations ?? {};
+  const entries = Object.entries({ ...existing, [cleanKey]: params.recommendation })
+    .sort((a, b) => new Date(b[1].generatedAt).getTime() - new Date(a[1].generatedAt).getTime())
+    .slice(0, 30);
+
+  target.aiRecommendations = Object.fromEntries(entries);
+  saveDb(storage, db);
+
+  const profile = toProfile(target);
+  const lastActiveAt =
+    profile.attempts.length > 0 ? profile.attempts[0].completedAt : target.createdAt;
+  return { ...profile, lastActiveAt };
 }

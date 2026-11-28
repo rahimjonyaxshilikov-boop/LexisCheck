@@ -139,13 +139,26 @@ export function stripMarkdownCodeFences(rawText: string): string {
   return match ? match[1].trim() : trimmed;
 }
 
+function parseJsonPayload(rawText: string): Record<string, unknown> {
+  const cleaned = stripMarkdownCodeFences(rawText);
+  try {
+    return JSON.parse(cleaned) as Record<string, unknown>;
+  } catch {
+    const startIdx = cleaned.indexOf('{');
+    const endIdx = cleaned.lastIndexOf('}');
+    if (startIdx !== -1 && endIdx > startIdx) {
+      return JSON.parse(cleaned.slice(startIdx, endIdx + 1)) as Record<string, unknown>;
+    }
+    throw new Error("AI javobi noto'g'ri JSON formatda keldi.");
+  }
+}
+
 export function parseAiReviewJson(
   rawText: string,
   fallbackUnitNumber: number = 1,
   model: string = AI_REVIEW_MODEL,
 ): AiReviewRecommendation {
-  const cleaned = stripMarkdownCodeFences(rawText);
-  const parsed = JSON.parse(cleaned) as Record<string, unknown>;
+  const parsed = parseJsonPayload(rawText);
 
   if (!parsed || typeof parsed !== 'object') {
     throw new Error("AI javobi noto'g'ri formatda keldi.");
@@ -174,21 +187,24 @@ export function parseAiReviewJson(
             .map((w) => w.trim())
             .slice(0, 8)
         : [];
+      const topicTitle =
+        typeof item.topicTitle === 'string' && item.topicTitle.trim()
+          ? item.topicTitle.trim()
+          : `Unit ${safeUnit} mavzulari`;
+      const rawReason = typeof item.reason === 'string' ? item.reason.trim() : '';
       return {
-        topicTitle:
-          typeof item.topicTitle === 'string' && item.topicTitle.trim()
-            ? item.topicTitle.trim()
-            : `Unit ${safeUnit} mavzulari`,
+        topicTitle,
         unitNumber: safeUnit,
         priority: normalizePriority(item.priority),
         reason:
-          typeof item.reason === 'string' ? item.reason.trim() : '',
+          rawReason ||
+          `Unit ${safeUnit} boʻyicha xato qilingan savollarni qayta koʻrib chiqish tavsiya etiladi.`,
         keyWords,
         practiceTip:
           typeof item.practiceTip === 'string' ? item.practiceTip.trim() : '',
       };
     })
-    .filter((t) => t.topicTitle.length > 0 && t.reason.length > 0)
+    .filter((t) => t.topicTitle.length > 0)
     .slice(0, 6);
 
   const studyPlan = Array.isArray(parsed.studyPlan)
@@ -211,3 +227,4 @@ export function parseAiReviewJson(
     model,
   };
 }
+

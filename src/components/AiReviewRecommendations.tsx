@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertCircle,
   BookOpen,
@@ -14,6 +14,10 @@ import type {
   StudentSummaryForTeacher,
 } from '../types/quiz';
 import { requestAiReviewRecommendations } from '../utils/api';
+import {
+  buildLocalDiagnosticReview,
+  LOCAL_DIAGNOSTIC_MODEL,
+} from '../utils/localDiagnosticReview';
 
 interface AiReviewRecommendationsProps {
   studentId?: string;
@@ -65,21 +69,30 @@ export function AiReviewRecommendations({
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const lastFetchedKeyRef = useRef<string | null>(null);
+  const lastFetchedSignatureRef = useRef<string | null>(null);
+  const requestSeqRef = useRef(0);
   const onSavedRef = useRef(onRecommendationSaved);
   onSavedRef.current = onRecommendationSaved;
 
+  const mistakesSignature = `${cacheKey}::${mistakes.length}:${mistakes
+    .slice(0, 5)
+    .map((m) => m.questionId)
+    .join(',')}`;
+
   useEffect(() => {
+    requestSeqRef.current += 1;
     setRecommendation(initialRecommendation);
     setError(null);
+    setLoading(false);
   }, [cacheKey, initialRecommendation]);
 
   const runAnalysis = useCallback(
     async (forceRefresh: boolean = false) => {
       if (mistakes.length === 0) return;
-      if (!forceRefresh && lastFetchedKeyRef.current === cacheKey) return;
+      if (!forceRefresh && lastFetchedSignatureRef.current === mistakesSignature) return;
 
-      lastFetchedKeyRef.current = cacheKey;
+      lastFetchedSignatureRef.current = mistakesSignature;
+      const reqId = ++requestSeqRef.current;
       setLoading(true);
       setError(null);
       try {
@@ -91,11 +104,13 @@ export function AiReviewRecommendations({
           cacheKey,
           mistakes,
         });
+        if (requestSeqRef.current !== reqId) return;
         setRecommendation(res.recommendation);
         onSavedRef.current?.(res.recommendation, res.profile);
       } catch (err) {
+        if (requestSeqRef.current !== reqId) return;
         if (forceRefresh) {
-          lastFetchedKeyRef.current = null;
+          lastFetchedSignatureRef.current = null;
         }
         setError(
           err instanceof Error
@@ -103,10 +118,12 @@ export function AiReviewRecommendations({
             : "AI tavsiyalarini yuklab boʻlmadi.",
         );
       } finally {
-        setLoading(false);
+        if (requestSeqRef.current === reqId) {
+          setLoading(false);
+        }
       }
     },
-    [studentId, studentName, scopeLabel, audience, cacheKey, mistakes],
+    [studentId, studentName, scopeLabel, audience, cacheKey, mistakes, mistakesSignature],
   );
 
   useEffect(() => {
@@ -114,6 +131,21 @@ export function AiReviewRecommendations({
     if (initialRecommendation) return;
     void runAnalysis(false);
   }, [mistakes.length, initialRecommendation, runAnalysis]);
+
+  const localFallbackRecommendation = useMemo(() => {
+    if (recommendation || mistakes.length === 0) return null;
+    return buildLocalDiagnosticReview({
+      studentName,
+      scopeLabel,
+      audience,
+      mistakes,
+    });
+  }, [recommendation, studentName, scopeLabel, audience, mistakes]);
+
+  const activeRecommendation =
+    recommendation ?? (error ? localFallbackRecommendation : null);
+  const isLocalDiagnostic =
+    activeRecommendation?.model === LOCAL_DIAGNOSTIC_MODEL;
 
   return (
     <section
@@ -128,7 +160,7 @@ export function AiReviewRecommendations({
           </div>
           <div>
             <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-indigo-700 dark:text-indigo-300">
-              <span>AI-tavsiya</span>
+              <span>{isLocalDiagnostic ? 'Avtomatik tahlil' : 'AI-tavsiya'}</span>
               <span aria-hidden="true">·</span>
               <span>{scopeLabel}</span>
             </div>
@@ -171,7 +203,7 @@ export function AiReviewRecommendations({
             </p>
           </div>
         </div>
-      ) : loading && !recommendation ? (
+      ) : loading && !activeRecommendation ? (
         <div
           data-testid="ai-review-loading"
           className="mt-4 space-y-3"
@@ -186,47 +218,43 @@ export function AiReviewRecommendations({
             <div className="h-28 animate-pulse rounded-xl bg-slate-200/80 dark:bg-white/5" />
           </div>
         </div>
-      ) : error && !recommendation ? (
-        <div
-          data-testid="ai-review-error"
-          role="alert"
-          className="mt-4 flex flex-col justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50/80 p-4 text-xs text-amber-900 sm:flex-row sm:items-center dark:border-amber-500/35 dark:bg-amber-950/30 dark:text-amber-200"
-        >
-          <div className="flex items-start gap-2.5">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
-            <div>
-              <p className="font-semibold">AI tahlilini olib boʻlmadi</p>
-              <p className="mt-0.5 text-amber-800/90 dark:text-amber-200/85">{error}</p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => void runAnalysis(true)}
-            className="gloss-btn-secondary inline-flex min-h-[36px] shrink-0 items-center justify-center rounded-xl px-3.5 text-xs font-semibold text-amber-900 dark:text-amber-100"
-          >
-            Qayta urinish
-          </button>
-        </div>
-      ) : recommendation ? (
+      ) : activeRecommendation ? (
         <div className="mt-4 space-y-5">
           {error && (
             <div
+              data-testid="ai-review-error"
               role="alert"
-              className="flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50/80 px-3.5 py-2.5 text-xs text-amber-900 dark:border-amber-500/35 dark:bg-amber-950/30 dark:text-amber-200"
+              className="flex flex-col justify-between gap-2.5 rounded-xl border border-amber-300 bg-amber-50/80 px-3.5 py-2.5 text-xs text-amber-900 sm:flex-row sm:items-center dark:border-amber-500/35 dark:bg-amber-950/30 dark:text-amber-200"
             >
-              <AlertCircle className="h-4 w-4 shrink-0" />
-              <span>{error}</span>
+              <div className="flex items-start gap-2">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                <div>
+                  <span className="font-semibold">
+                    {isLocalDiagnostic
+                      ? 'Bulutli Gemini AI ulanmadi — xatolaringiz asosida qurilma ichidagi tahlil koʻrsatildi. '
+                      : 'AI yangilanishida xatolik: '}
+                  </span>
+                  <span className="opacity-90">{error}</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => void runAnalysis(true)}
+                className="gloss-btn-secondary inline-flex min-h-[32px] shrink-0 items-center justify-center rounded-lg px-3 text-xs font-semibold text-amber-900 dark:text-amber-100"
+              >
+                Qayta urinish
+              </button>
             </div>
           )}
 
           {/* Diagnostic Summary */}
           <div className="rounded-xl border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-black/35">
             <p className="text-sm font-medium leading-relaxed text-slate-900 dark:text-slate-100">
-              {recommendation.summary}
+              {activeRecommendation.summary}
             </p>
-            {recommendation.strengthsNote && (
+            {activeRecommendation.strengthsNote && (
               <p className="mt-2 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
-                {recommendation.strengthsNote}
+                {activeRecommendation.strengthsNote}
               </p>
             )}
           </div>
@@ -236,12 +264,12 @@ export function AiReviewRecommendations({
             <div className="flex items-center justify-between gap-2">
               <h3 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
                 <Target className="h-3.5 w-3.5 text-indigo-500" />
-                <span>Tavsiya etilgan mavzular ({recommendation.recommendedTopics.length})</span>
+                <span>Tavsiya etilgan mavzular ({activeRecommendation.recommendedTopics.length})</span>
               </h3>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              {recommendation.recommendedTopics.map((topic, idx) => {
+              {activeRecommendation.recommendedTopics.map((topic, idx) => {
                 const priorityStyle = PRIORITY_STYLES[topic.priority] ?? PRIORITY_STYLES.medium;
                 return (
                   <article
@@ -296,17 +324,17 @@ export function AiReviewRecommendations({
           </div>
 
           {/* Concrete Study Plan */}
-          {recommendation.studyPlan.length > 0 && (
+          {activeRecommendation.studyPlan.length > 0 && (
             <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-white/10 dark:bg-black/30">
               <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
                 <BookOpen className="h-3.5 w-3.5 text-emerald-500" />
                 <span>Qisqa takrorlash rejasi</span>
               </div>
               <ol className="mt-2.5 space-y-1.5 text-xs leading-relaxed text-slate-700 dark:text-slate-300">
-                {recommendation.studyPlan.map((step, i) => (
+                {activeRecommendation.studyPlan.map((step, i) => (
                   <li key={i} className="flex items-start gap-2">
                     <span className="font-mono-tabular font-bold text-indigo-600 dark:text-indigo-400">
-                      0{i + 1}.
+                      {String(i + 1).padStart(2, '0')}.
                     </span>
                     <span>{step}</span>
                   </li>
@@ -315,7 +343,30 @@ export function AiReviewRecommendations({
             </div>
           )}
         </div>
-      ) : null}
+      ) : (
+        <div
+          data-testid="ai-review-error"
+          role="alert"
+          className="mt-4 flex flex-col justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50/80 p-4 text-xs text-amber-900 sm:flex-row sm:items-center dark:border-amber-500/35 dark:bg-amber-950/30 dark:text-amber-200"
+        >
+          <div className="flex items-start gap-2.5">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+            <div>
+              <p className="font-semibold">AI tahlilini olib boʻlmadi</p>
+              <p className="mt-0.5 text-amber-800/90 dark:text-amber-200/85">
+                {error ?? "Tahlil qilish uchun maʻlumot yetarli emas."}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => void runAnalysis(true)}
+            className="gloss-btn-secondary inline-flex min-h-[36px] shrink-0 items-center justify-center rounded-xl px-3.5 text-xs font-semibold text-amber-900 dark:text-amber-100"
+          >
+            Qayta urinish
+          </button>
+        </div>
+      )}
     </section>
   );
 }
